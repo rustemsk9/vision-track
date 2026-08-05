@@ -8,30 +8,40 @@
         body { margin: 0; background: #000; overflow: hidden; color: white; font-family: sans-serif; }
         #container { position: relative; width: 640px; height: 480px; margin: 0 auto; top: 20px; }
         video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px; }
-        #status { position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 5px; font-weight: bold; }
+        #status { position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(0,0,0,0.75); padding: 8px 12px; border-radius: 6px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="container">
         <video id="webcam" autoplay playsinline muted></video>
         <canvas id="overlay"></canvas>
-        <div id="status">Initializing Webcam...</div>
+        <div id="status">
+            <div id="status-text">Initializing Webcam...</div>
+        </div>
     </div>
     <script>
 const video = document.getElementById('webcam');
 const canvas = document.getElementById('overlay');
 const ctx = canvas.getContext('2d');
-const statusDiv = document.getElementById('status');
+const statusText = document.getElementById('status-text');
 
-// Offscreen canvas for YOLO 640x640 tensor resizing
-// willReadFrequently=true tells the browser to keep pixel data in CPU-accessible RAM,
-// preventing the GPU→CPU readback penalty that Chrome warns about on every getImageData() call
+// Fixed to 640x640 to match static ONNX graph input shape [1, 3, 640, 640]
+const MODEL_SIZE = 640;
 const offscreenCanvas = document.createElement('canvas');
-offscreenCanvas.width = 640;
-offscreenCanvas.height = 640;
+offscreenCanvas.width = MODEL_SIZE;
+offscreenCanvas.height = MODEL_SIZE;
 const offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
 
+const tensorData = new Float32Array(1 * 3 * MODEL_SIZE * MODEL_SIZE);
+const inv255 = 1.0 / 255.0;
+
 let session;
+let isInferring = false;
+let latestBoxes = [];
+let lastInferenceTimeMs = 0;
+let currentFps = 0;
+let fpsCounter = 0;
+let fpsTimer = performance.now();
 
 async function getWebcamStream(constraints = { video: { width: 640, height: 480 } }) {
     if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
@@ -54,7 +64,7 @@ async function getWebcamStream(constraints = { video: { width: 640, height: 480 
 
 async function initWebcam() {
     try {
-        statusDiv.innerText = "Requesting Webcam Permission...";
+        statusText.innerText = "Requesting Webcam Permission...";
         const stream = await getWebcamStream({ video: { width: 640, height: 480 } });
         video.srcObject = stream;
         video.play().catch(() => {});
@@ -63,56 +73,54 @@ async function initWebcam() {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             
-            statusDiv.innerText = "Downloading YOLO Model (12MB). Please wait...";
+            statusText.innerText = "Downloading YOLO Model (12MB). Please wait...";
             
-            // Disable threading to prevent Safari from requesting SharedArrayBuffer and crashing on threaded WASM
-            ort.env.wasm.numThreads = 1;
+            // Enable SIMD hardware vector acceleration
+            ort.env.wasm.simd = true;
             
-            // Explicitly set the WASM paths because Safari struggles to resolve relative WASM blobs from about:srcdoc iframes
+            // Auto-detect multi-threading support (4 CPU threads on supported browsers)
+            if (typeof SharedArrayBuffer !== 'undefined') {
+                ort.env.wasm.numThreads = Math.min(4, navigator.hardwareConcurrency || 4);
+            } else {
+                ort.env.wasm.numThreads = 1;
+            }
+            
             ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/';
             
-            // Fetch model from Streamlit's static server using same-origin relative URL.
-            // Fetch model from the Go Gateway static server.
-            // This avoids Streamlit's macOS MIME type serving bugs completely.
             const modelUrl = '/static/yolov8n.onnx';
-            
-            // Explicitly fetch the model as an ArrayBuffer to bypass Safari's Range Request
-            // truncation bug on large binary files. Safari sometimes sends Range: bytes=0-
-            // headers and then silently drops the connection mid-download, causing ONNX to
-            // receive a truncated payload and crash with "protobuf parsing failed".
             const response = await fetch(modelUrl, { cache: 'force-cache' });
             const arrayBuffer = await response.arrayBuffer();
             
-            // Safety check: the ONNX model is ~12MB. If we got less than 10KB, Safari truncated it.
             if (arrayBuffer.byteLength < 10000) {
                 throw new Error("Model file too small (" + arrayBuffer.byteLength + " bytes). The download was likely truncated by the browser.");
             }
             
             console.log("[Edge AI] Model downloaded successfully: " + (arrayBuffer.byteLength / 1024 / 1024).toFixed(1) + " MB");
-            
             const modelBytes = new Uint8Array(arrayBuffer);
             
-            // Try WebGL first for GPU acceleration (~30+ FPS), fallback to WASM CPU
-            session = await ort.InferenceSession.create(modelBytes, { executionProviders: ['webgl', 'wasm'] });
+            // Try WebGPU first for native GPU compute shaders, fallback to WebGL and WASM SIMD
+            session = await ort.InferenceSession.create(modelBytes, { 
+                executionProviders: ['webgpu', 'webgl', 'wasm'] 
+            });
             
-            statusDiv.innerText = "Edge AI Active! (Running at ~30 FPS)";
-            setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
+            statusText.innerText = "Edge AI Active! (60 FPS Overlay)";
+            setTimeout(() => { 
+                const st = document.getElementById('status');
+                if (st) st.style.display = 'none';
+            }, 3000);
             
-            inferenceLoop();
+            // Start smooth rendering loop and non-blocking inference worker loop
+            requestAnimationFrame(renderLoop);
+            setInterval(triggerInference, 10);
         };
     } catch (e) {
-        statusDiv.innerText = "Error: " + e.message;
+        statusText.innerText = "Error: " + e.message;
         console.error(e);
     }
 }
 
-// Pre-allocate typed array memory once to eliminate Garbage Collection pauses
-const tensorData = new Float32Array(1 * 3 * 640 * 640);
-const inv255 = 1.0 / 255.0;
-
-// Convert HTML5 ImageData to Float32 CHW Tensor (1, 3, 640, 640)
 function preprocess(imageBuffer) {
-    const size = 640 * 640;
+    const size = MODEL_SIZE * MODEL_SIZE;
     const size2 = size * 2;
     for (let i = 0; i < size; i++) {
         const i4 = i * 4;
@@ -120,10 +128,9 @@ function preprocess(imageBuffer) {
         tensorData[i + size] = imageBuffer[i4 + 1] * inv255;
         tensorData[i + size2] = imageBuffer[i4 + 2] * inv255;
     }
-    return new ort.Tensor('float32', tensorData, [1, 3, 640, 640]);
+    return new ort.Tensor('float32', tensorData, [1, 3, MODEL_SIZE, MODEL_SIZE]);
 }
 
-// Compute Intersection Over Union for NMS
 function computeIOU(box1, box2) {
     const x1 = Math.max(box1.x1, box2.x1);
     const y1 = Math.max(box1.y1, box2.y1);
@@ -139,83 +146,91 @@ function computeIOU(box1, box2) {
     return intersection / (area1 + area2 - intersection);
 }
 
-let fpsCounter = 0;
-let currentFps = 0;
-let currentLatency = 0;
-let fpsTimer = performance.now();
+async function triggerInference() {
+    if (isInferring || !session || !video.videoWidth) return;
+    isInferring = true;
 
-async function inferenceLoop() {
-    if (!video.videoWidth) {
-        setTimeout(inferenceLoop, 100);
-        return;
-    }
+    try {
+        const tStart = performance.now();
 
-    const tStart = performance.now();
-
-    // 1. Draw video frame to 640x640 offscreen canvas
-    offscreenCtx.drawImage(video, 0, 0, 640, 640);
-    const imgData = offscreenCtx.getImageData(0, 0, 640, 640);
-    
-    // 2. Preprocess to tensor
-    const input = preprocess(imgData.data);
-    
-    // 3. Run Inference directly inside the browser sandbox!
-    const feeds = {};
-    feeds[session.inputNames[0]] = input;
-    const results = await session.run(feeds);
-    
-    const output = results[session.outputNames[0]].data; // [1, 84, 8400]
-    
-    // 4. Post-process (Filter Person Class = index 4)
-    let boxes = [];
-    for (let i = 0; i < 8400; i++) {
-        let person_score = output[4 * 8400 + i];
-        if (person_score > 0.45) { // Confidence Threshold
-            let cx = output[0 * 8400 + i];
-            let cy = output[1 * 8400 + i];
-            let w = output[2 * 8400 + i];
-            let h = output[3 * 8400 + i];
-            boxes.push({
-                x1: cx - w / 2,
-                y1: cy - h / 2,
-                x2: cx + w / 2,
-                y2: cy + h / 2,
-                score: person_score
-            });
-        }
-    }
-    
-    // Non-Maximum Suppression (NMS)
-    boxes.sort((a, b) => b.score - a.score);
-    let finalBoxes = [];
-    for (let b of boxes) {
-        let keep = true;
-        for (let f of finalBoxes) {
-            if (computeIOU(b, f) > 0.45) {
-                keep = false;
-                break;
+        // 1. Draw video frame to 640x640 offscreen canvas
+        offscreenCtx.drawImage(video, 0, 0, MODEL_SIZE, MODEL_SIZE);
+        const imgData = offscreenCtx.getImageData(0, 0, MODEL_SIZE, MODEL_SIZE);
+        
+        // 2. Preprocess to tensor [1, 3, 640, 640]
+        const input = preprocess(imgData.data);
+        
+        // 3. Run Inference directly inside browser GPU/WASM sandbox
+        const feeds = {};
+        feeds[session.inputNames[0]] = input;
+        const results = await session.run(feeds);
+        
+        const output = results[session.outputNames[0]].data; // [1, 84, 8400]
+        const num_anchors = Math.floor(output.length / 84);
+        
+        // 4. Filter Person Class (Index 4)
+        let boxes = [];
+        for (let i = 0; i < num_anchors; i++) {
+            let person_score = output[4 * num_anchors + i];
+            if (person_score > 0.45) {
+                let cx = output[0 * num_anchors + i];
+                let cy = output[1 * num_anchors + i];
+                let w = output[2 * num_anchors + i];
+                let h = output[3 * num_anchors + i];
+                boxes.push({
+                    x1: cx - w / 2,
+                    y1: cy - h / 2,
+                    x2: cx + w / 2,
+                    y2: cy + h / 2,
+                    score: person_score
+                });
+                if (boxes.length >= 100) break;
             }
         }
-        if (keep) finalBoxes.push(b);
+        
+        // Non-Maximum Suppression (NMS)
+        boxes.sort((a, b) => b.score - a.score);
+        let finalBoxes = [];
+        for (let b of boxes) {
+            let keep = true;
+            for (let f of finalBoxes) {
+                if (computeIOU(b, f) > 0.45) {
+                    keep = false;
+                    break;
+                }
+            }
+            if (keep) finalBoxes.push(b);
+        }
+        
+        latestBoxes = finalBoxes;
+        lastInferenceTimeMs = performance.now() - tStart;
+    } catch (err) {
+        console.error("Inference Error:", err);
+    } finally {
+        isInferring = false;
     }
-    
-    const tEnd = performance.now();
-    currentLatency = tEnd - tStart;
+}
 
-    // Calculate real-time FPS
+function renderLoop() {
+    requestAnimationFrame(renderLoop);
+
+    if (!video.videoWidth) return;
+
+    // Calculate Smooth UI Render FPS
+    const now = performance.now();
     fpsCounter++;
-    if (tEnd - fpsTimer >= 1000) {
-        currentFps = Math.round((fpsCounter * 1000) / (tEnd - fpsTimer));
+    if (now - fpsTimer >= 1000) {
+        currentFps = Math.round((fpsCounter * 1000) / (now - fpsTimer));
         fpsCounter = 0;
-        fpsTimer = tEnd;
+        fpsTimer = now;
     }
-    
-    // 5. Draw Results
+
+    // 5. Draw Bounding Boxes Overlay smoothly at 60 FPS
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const scaleX = canvas.width / 640.0;
-    const scaleY = canvas.height / 640.0;
+    const scaleX = canvas.width / (MODEL_SIZE * 1.0);
+    const scaleY = canvas.height / (MODEL_SIZE * 1.0);
     
-    for (let b of finalBoxes) {
+    for (let b of latestBoxes) {
         const px1 = b.x1 * scaleX;
         const py1 = b.y1 * scaleY;
         const pw = (b.x2 - b.x1) * scaleX;
@@ -232,14 +247,11 @@ async function inferenceLoop() {
     
     ctx.fillStyle = '#00FF00';
     ctx.font = 'bold 22px Arial';
-    ctx.fillText(`⚡ Edge AI: ${currentFps} FPS | Latency: ${currentLatency.toFixed(1)} ms`, 20, 35);
+    ctx.fillText(`⚡ Edge AI (640p): ${currentFps} UI FPS | AI Latency: ${lastInferenceTimeMs.toFixed(1)} ms`, 20, 35);
     
     ctx.fillStyle = '#FF0000';
     ctx.font = '22px Arial';
-    ctx.fillText("Total People: " + finalBoxes.length, 20, 65);
-    
-    // 6. Schedule next frame immediately (no 33ms delay throttle)
-    setTimeout(inferenceLoop, 0);
+    ctx.fillText("Total People: " + latestBoxes.length, 20, 65);
 }
 
 // Start

@@ -2,12 +2,12 @@
   "detection_precision": 0.92,
   "detection_recall": 0.9,
   "f1_score": 0.91,
-  "average_fps_per_stream": 115.9,
-  "average_latency_ms": 8.6,
+  "average_fps_per_stream": 142.5,
+  "average_latency_ms": 7.0,
   "extra_info": {
-    "stream_id": "1",
+    "stream_id": "2",
     "processed_frames": 958,
-    "total_video_time_sec": 8.26
+    "total_video_time_sec": 6.72
   },
-  "last_updated": "2026-08-05 16:17:06"
+  "last_updated": "2026-08-05 16:31:12"
 }
