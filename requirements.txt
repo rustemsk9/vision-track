@@ -1,0 +1,8 @@
+streamlit
+torch
+torchvision
+supervision
+opencv-python
+ultralytics
+numpy
+onnxruntime

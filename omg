@@ -1,0 +1,231 @@
+vn_n00000s4000069/T/tmpmwdd1l6m.mp4
+2026/07/29 17:00:58 Browser requesting video file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpmwdd1l6m.mp4
+2026/07/29 17:01:08 Browser requesting video file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpmwdd1l6m.mp4
+2026/07/29 17:01:10 Browser requesting video file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpmwdd1l6m.mp4
+2026/07/29 17:01:11 Browser requesting video file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpmwdd1l6m.mp4
+
+Uncaught SyntaxError: missing ) after argument list (at VM784 about:srcdoc:1:1109)
+
+wasm-utils-load-file.ts:36 Uncaught (in promise) Error: failed to load external data file: http://localhost:8080/video?path=/home/rustetp/Documents/vision-track/yolov8n.onnx
+
+## Next
+An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.
+:8080/video?path=/home/rustetp/Documents/vision-track/yolov8n.onnx:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+wasm-utils-load-file.ts:36 Uncaught (in promise) Error: failed to load external data file: http://localhost:8080/video?path=/home/rustetp/Documents/vision-track/yolov8n.onnx
+
+## NExt
+NameError: name 'get_local_ip' is not defined
+Traceback:
+File "/Volumes/vision-track/app.py", line 297, in <module>
+    true_ip = get_local_ip()
+              ^^^^^^^^^^^^
+
+## Next
+10.10.16.36:8080/video?path=/home/rustetp/Documents/vision-track/yolov8n.onnx:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+
+wasm-utils-load-file.ts:36 Uncaught (in promise) Error: failed to load external data file: http://10.10.16.36:8080/video?path=/home/rustetp/Documents/vision-track/yolov8n.onnx
+
+## Possible /Volumes access problem
+
+## Next
+Guest@D1-11 backend % go run server.go
+2026/08/02 15:46:49 VisionTrack Unclogged Gateway Starting on :8080...
+2026/08/02 15:47:04 New browser client connected to Stream 1
+2026/08/02 15:47:04 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmp2ubspr53.mp4
+2026/08/02 15:47:04 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmp2ubspr53.mp4
+2026/08/02 15:47:04 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmp2ubspr53.mp4
+2026/08/02 15:47:09 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmp2ubspr53.mp4
+2026/08/02 15:47:10 Received 30 frames from Python Worker for Stream 1 (Payload Size: 347 bytes)
+2026/08/02 15:47:11 Received 30 frames from Python Worker for Stream 1 (Payload Size: 348 bytes)
+2026/08/02 15:47:12 Received 30 frames from Python Worker for Stream 1 (Payload Size: 345 bytes)
+2026/08/02 15:47:13 Received 30 frames from Python Worker for Stream 1 (Payload Size: 341 bytes)
+2026/08/02 15:47:14 Received 30 frames from Python Worker for Stream 1 (Payload Size: 346 bytes)
+2026/08/02 15:47:15 Received 30 frames from Python Worker for Stream 1 (Payload Size: 242 bytes)
+2026/08/02 15:47:16 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmp2ubspr53.mp4
+
+## Safari terminal output
+Guest@D1-11 backend % go run server.go
+2026/08/02 16:01:40 VisionTrack Unclogged Gateway Starting on :8080...
+2026/08/02 16:02:10 New browser client connected to Stream 1
+2026/08/02 16:02:10 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpb601ej8k.mp4
+2026/08/02 16:02:10 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpb601ej8k.mp4
+2026/08/02 16:02:10 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpb601ej8k.mp4
+2026/08/02 16:02:15 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpb601ej8k.mp4
+2026/08/02 16:02:16 Received 30 frames from Python Worker for Stream 1 (Payload Size: 347 bytes)
+2026/08/02 16:02:17 Received 30 frames from Python Worker for Stream 1 (Payload Size: 348 bytes)
+2026/08/02 16:02:17 Received 30 frames from Python Worker for Stream 1 (Payload Size: 345 bytes)
+2026/08/02 16:02:18 Received 30 frames from Python Worker for Stream 1 (Payload Size: 341 bytes)
+2026/08/02 16:02:19 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpb601ej8k.mp4
+2026/08/02 16:02:19 Received 30 frames from Python Worker for Stream 1 (Payload Size: 346 bytes)
+2026/08/02 16:02:20 Received 30 frames from Python Worker for Stream 1 (Payload Size: 242 bytes)
+2026/08/02 16:02:21 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpb601ej8k.mp4
+2026/08/02 16:02:21 Received 30 frames from Python Worker for Stream 1 (Payload Size: 237 bytes)
+2026/08/02 16:02:22 Received 30 frames from Python Worker for Stream 1 (Payload Size: 349 bytes)
+2026/08/02 16:02:22 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpb601ej8k.mp4
+2026/08/02 16:02:22 Received 30 frames from Python Worker for Stream 1 (Payload Size: 341 bytes)
+2026/08/02 16:02:23 Received 30 frames from Python Worker for Stream 1 (Payload Size: 334 bytes)
+
+
+# Chrome terminal output
+2026/08/02 16:03:53 New browser client connected to Stream 1
+2026/08/02 16:03:53 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmp7j1g56wn.mp4
+2026/08/02 16:03:53 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmp7j1g56wn.mp4
+2026/08/02 16:03:53 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmp7j1g56wn.mp4
+2026/08/02 16:03:53 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmp7j1g56wn.mp4
+2026/08/02 16:03:59 Received 30 frames from Python Worker for Stream 1 (Payload Size: 329 bytes)
+2026/08/02 16:03:59 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpb601ej8k.mp4
+2026/08/02 16:03:59 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpb601ej8k.mp4
+2026/08/02 16:03:59 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpb601ej8k.mp4
+2026/08/02 16:04:00 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmp7j1g56wn.mp4
+2026/08/02 16:04:04 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpb601ej8k.mp4
+2026/08/02 16:04:10 Browser requesting file: /var/folders/zz/zyxvpxvq6csfxvn_n00000s4000069/T/tmpb601ej8k.mp4
+2026/08/02 16:04:13 Received 30 frames from Python Worker for Stream 1 (Payload Size: 342 bytes)
+2026/08/02 16:04:14 Received 30 frames from Python Worker for Stream 1 (Payload Size: 336 bytes)
+2026/08/02 16:04:15 Received 30 frames from Python Worker for Stream 1 (Payload Size: 342 bytes)
+
+## Next
+2026-08-02 16:34:46.122 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+FutureWarning: The `ByteTrack` was deprecated since v0.28.0. It will be removed in v0.30.0.
+[1] Starting inference loop. FPS: 30.00365806603561, Resolution: 1280x720
+Traceback (most recent call last):
+  File "/Users/Guest/vision-track/run_inference_worker.py", line 50, in <module>
+    results = detector.predict(frame, conf=args.conf, verbose=False) # verbose=False to quiet YOLO defaults
+TypeError: PersonDetector.predict() got an unexpected keyword argument 'verbose'
+
+## omg time sppike on frame
+
+`st.components.v1.html` will be removed after 2026-06-01.
+FutureWarning: The `ByteTrack` was deprecated since v0.28.0. It will be removed in v0.30.0.
+[1] Starting inference loop. FPS: 30.00365806603561, Resolution: 1280x720
+
+
+## Log
+0: 384x640 3 persons, 62.7ms
+Speed: 1.1ms preprocess, 62.7ms inference, 8.9ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 1] Total: 780.9ms (Read: 17.4ms, AI: 729.6ms, Post: 33.8ms)
+
+0: 384x640 3 persons, 17.3ms
+Speed: 1.0ms preprocess, 17.3ms inference, 19.5ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 2] Total: 47.1ms (Read: 0.6ms, AI: 45.2ms, Post: 1.3ms)
+
+0: 384x640 3 persons, 15.7ms
+Speed: 0.9ms preprocess, 15.7ms inference, 17.4ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 3] Total: 39.4ms (Read: 0.6ms, AI: 37.5ms, Post: 1.4ms)
+
+0: 384x640 3 persons, 14.9ms
+Speed: 1.0ms preprocess, 14.9ms inference, 14.2ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 4] Total: 35.5ms (Read: 0.6ms, AI: 33.6ms, Post: 1.3ms)
+
+0: 384x640 3 persons, 13.9ms
+Speed: 0.9ms preprocess, 13.9ms inference, 14.4ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 5] Total: 34.8ms (Read: 0.5ms, AI: 32.9ms, Post: 1.4ms)
+
+0: 384x640 3 persons, 10.8ms
+Speed: 2.2ms preprocess, 10.8ms inference, 14.3ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 6] Total: 34.0ms (Read: 0.8ms, AI: 31.2ms, Post: 2.0ms)
+
+0: 384x640 3 persons, 11.6ms
+Speed: 2.3ms preprocess, 11.6ms inference, 12.6ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 7] Total: 40.8ms (Read: 4.2ms, AI: 35.0ms, Post: 1.6ms)
+
+0: 384x640 3 persons, 16.5ms
+Speed: 1.1ms preprocess, 16.5ms inference, 12.0ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 8] Total: 36.0ms (Read: 0.8ms, AI: 33.6ms, Post: 1.6ms)
+
+0: 384x640 3 persons, 17.3ms
+Speed: 1.0ms preprocess, 17.3ms inference, 10.5ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 9] Total: 1066.8ms (Read: 0.8ms, AI: 33.3ms, Post: 1032.7ms)
+
+0: 384x640 3 persons, 25.4ms
+Speed: 6.7ms preprocess, 25.4ms inference, 13.1ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 10] Total: 1649.9ms (Read: 2.5ms, AI: 54.8ms, Post: 1592.7ms)
+
+0: 384x640 3 persons, 27.4ms
+Speed: 6.7ms preprocess, 27.4ms inference, 15.0ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 11] Total: 1633.4ms (Read: 2.9ms, AI: 62.1ms, Post: 1568.4ms)
+
+0: 384x640 3 persons, 27.6ms
+Speed: 7.4ms preprocess, 27.6ms inference, 14.7ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 12] Total: 1199.7ms (Read: 2.5ms, AI: 59.0ms, Post: 1138.2ms)
+
+0: 384x640 3 persons, 18.4ms
+Speed: 3.2ms preprocess, 18.4ms inference, 5.7ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 13] Total: 1699.9ms (Read: 2.7ms, AI: 40.0ms, Post: 1657.2ms)
+
+0: 384x640 3 persons, 24.1ms
+Speed: 8.6ms preprocess, 24.1ms inference, 16.0ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 14] Total: 833.2ms (Read: 2.5ms, AI: 61.5ms, Post: 769.2ms)
+
+0: 384x640 3 persons, 18.8ms
+Speed: 3.6ms preprocess, 18.8ms inference, 6.1ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 15] Total: 1799.9ms (Read: 2.3ms, AI: 38.5ms, Post: 1759.1ms)
+
+0: 384x640 3 persons, 24.5ms
+Speed: 7.6ms preprocess, 24.5ms inference, 15.3ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 16] Total: 1467.4ms (Read: 2.6ms, AI: 55.9ms, Post: 1408.9ms)
+
+0: 384x640 3 persons, 24.6ms
+Speed: 6.4ms preprocess, 24.6ms inference, 16.2ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 17] Total: 1499.2ms (Read: 2.4ms, AI: 56.5ms, Post: 1440.4ms)
+
+0: 384x640 3 persons, 29.5ms
+Speed: 6.6ms preprocess, 29.5ms inference, 11.7ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 18] Total: 1933.0ms (Read: 3.5ms, AI: 62.5ms, Post: 1866.9ms)
+
+0: 384x640 3 persons, 26.0ms
+Speed: 7.7ms preprocess, 26.0ms inference, 15.2ms postprocess per image at shape (1, 3, 384, 640)
+[Worker 1 | Frame 19] Total: 66.5ms (Read: 2.6ms, AI: 61.6ms, Post: 2.3ms)
+
+
+# 4 August errors
+## Safari
+[Error] failed to asynchronously prepare wasm: both async and sync fetching of the wasm failed
+	(anonymous function) (ort-wasm-simd-threaded.jsep.mjs:14:99)
+[Error] Aborted(both async and sync fetching of the wasm failed)
+	H (ort-wasm-simd-threaded.jsep.mjs:13)
+	(anonymous function) (ort-wasm-simd-threaded.jsep.mjs:14:148)
+[Error] Unhandled Promise Rejection: Error: no available backend found. ERR: [wasm] RuntimeError: Aborted(both async and sync fetching of the wasm failed). Build with -sASSERTIONS for more info.
+	(anonymous function) (about:srcdoc:53)
+
+## Chrome no errors. but boxes still show low fps
+
+# Next
+  ## Safari
+  console:
+  [Error] Unhandled Promise Rejection: Error: Can't create a session. ERROR_CODE: 7, ERROR_MESSAGE: Failed to load model because protobuf parsing failed.
+	(anonymous function) (about:srcdoc:53)
+  Frames>srcdoc
+  // Load ONNX Model via WebAssembly natively from Streamlit
+  session = await ort.InferenceSession.create(modelUrl, { executionProviders: ['wasm'] });
+  Unhandled Promise Rejection: Error: Can't create a session. ERROR_CODE: 7, ERROR_MESSAGE: Failed to load model because protobuf parsing failed.
+  ## Chrome
+  console warning:
+  VM318 about:srcdoc:82 Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true. See: https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently
+  inferenceLoop	@	VM318 about:srcdoc:82
+  setTimeout		
+  inferenceLoop	@	VM318 about:srcdoc:152
+  await in inferenceLoop		
+  video.onloadedmetadata	@	VM318 about:srcdoc:39
+
+# Next
+  ## Safari
+  Unhandled Promise Rejection: Error: Can't create a session. ERROR_CODE: 7, ERROR_MESSAGE: Failed to load model because protobuf parsing failed. srcdoc:56
+
+# Next
+## 2d webcam and also 3d advanced engine
+AttributeError: module 'streamlit' has no attribute 'iframe'
+Traceback:
+File "/Volumes/vision-track/app.py", line 391, in <module>
+    st.iframe("/app/static/webcam.html", height=550)
+
+## new video with frontend boxes are not correctly resizing, making it too close or with big black gap below. lets adjust our backend stream, so that it will start only when yolo completes processes, and since its multi-stream, each video starts whenever javascript boxes are ready.
+
+# Next
+## Safari
+  [Error] Did not parse stylesheet at 'http://localhost:8501/app/static/static/css/index.CIiu7Ygf.css' because non CSS MIME types are not allowed in strict mode.
+[Error] TypeError: 'text/html' is not a valid JavaScript MIME type.
+
+## Chrome 
+index.6xX1278W.js:1 Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "text/html". Strict MIME type checking is enforced for module scripts per HTML spec.

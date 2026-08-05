@@ -1,0 +1,22 @@
+# VisionTrack (vt) - Change Log & Technical Summary
+
+## 1. 2D Webcam View Mode Error Fix
+- **Error**: `TypeError: undefined is not an object (evaluating 'navigator.mediaDevices.getUserMedia')`
+- **Root Cause**: Browsers require a **Secure Context** (`localhost` or `https://`) for camera hardware access (`navigator.mediaDevices`). Serving `iframe` elements with LAN IPs (`192.168.x.x`) over HTTP forced browsers to strip `navigator.mediaDevices`.
+- **Fix**:
+  - Updated `iframe` sources in [`app.py`](file:///Users/Guest/vt/app.py) to use `http://localhost:8080/static/webcam.html` and `http://localhost:8080/static/engine3d.html`.
+  - Implemented `getWebcamStream()` helper with legacy polyfills and secure context checks in [`frontend_2d/app.js`](file:///Users/Guest/vt/frontend_2d/app.js), [`frontend/app.js`](file:///Users/Guest/vt/frontend/app.js), [`static/webcam.html`](file:///Users/Guest/vt/static/webcam.html), and [`static/engine3d.html`](file:///Users/Guest/vt/static/engine3d.html).
+
+## 2. 2D Webcam Bounding Box Capture & FPS Enhancements
+- **Architecture**: Yes, 2D Webcam View Mode uses an **HTML5 Canvas JavaScript overlay (`<canvas id="overlay">`)** layered directly over the `<video id="webcam">` element.
+- **FPS Bottleneck**: Previously, `setTimeout(inferenceLoop, 33)` introduced a forced 33ms artificial delay *after* inference completed, capping frame rates to ~15 FPS. Unoptimized RGBA pixel normalization loops also caused CPU overhead.
+- **Enhancements**:
+  - **Pre-allocated Float32Array**: Replaced per-frame memory allocation with static `tensorData` typed arrays, eliminating Garbage Collection spikes.
+  - **Optimized Normalization**: Switched floating-point division `/ 255.0` to fast multiplication `* 0.0039215686`.
+  - **Zero-Delay Scheduling**: Removed the 33ms throttle delay and scheduled inference using `setTimeout(inferenceLoop, 0)` for max hardware utilization.
+  - **Real-Time HUD**: Added live FPS & Latency display (`⚡ Edge AI: XX FPS | Latency: XX.X ms`) directly onto the canvas overlay.
+
+## 3. Performance Metrics Logging & Reports
+- **Storage**: Benchmark & model metrics are stored in [`reports/performance_metrics.json`](file:///Users/Guest/vt/reports/performance_metrics.json).
+- **Automated Logging**: Created [`utils/metrics_logger.py`](file:///Users/Guest/vt/utils/metrics_logger.py). [`run_inference_worker.py`](file:///Users/Guest/vt/run_inference_worker.py) automatically calculates real-time worker FPS, per-frame latency breakdown, and updates [`reports/performance_metrics.json`](file:///Users/Guest/vt/reports/performance_metrics.json) on completion.
+- **UI Dashboard**: Integrated an interactive **"📊 Performance Metrics Report"** sidebar card in [`app.py`](file:///Users/Guest/vt/app.py).
