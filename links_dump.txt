@@ -1,0 +1,583 @@
+--- AMASS ---
+AMASS
+window.dataLayer = window.dataLayer || [];   function gtag(){dataLayer.push(arguments);}   gtag('js', new Date());    gtag('config', 'UA-143926561-2');
+[Home](https://amass.is.tue.mpg.de/index.html)
+[News](https://amass.is.tue.mpg.de/news.html)
+[Downloads](https://amass.is.tue.mpg.de/download.php)
+[License](https://amass.is.tue.mpg.de/license.html)
+[Extra](https://amass.is.tue.mpg.de/extra.php)
+[AMASS](https://amass.is.tue.mpg.de/index.html)
+[AMASS](https://amass.is.tue.mpg.de/index.html)
+[Home](https://amass.is.tue.mpg.de/index.html)
+[News](https://amass.is.tue.mpg.de/news.html)
+[Downloads](https://amass.is.tue.mpg.de/download.php)
+[License](https://amass.is.tue.mpg.de/license.html)
+[Extra](https://amass.is.tue.mpg.de/extra.php)
+[Sign In](https://amass.is.tue.mpg.de/login.php)
+[Logout](https://amass.is.tue.mpg.de/logout.php)
+Legend
+SMPL+H
+:
+[SMPL](https://smpl.is.tue.mpg.de/)
+body model +
+[MANO](https://mano.is.tue.mpg.de/)
+hand model (52 joints, 6890 vertices)
+[SMPL-X](https://smpl-x.is.tue.mpg.de/)
+: body model including hands and facial expressions (55 joints, 10475 vertices)
+G
+: gendered (male and female models)
+N
+: neutral (a single model that can represent male and female body shapes)
+To cite the AMASS dataset in its entirety, please include the following references in your project:
+[amass.bib](https://download.is.tue.mpg.de/amass/amass.bib)
+Subjects
+Motions
+Minutes
+Required Citation
+License
+Bodies
+[ACCAD](https://accad.osu.edu/research/motion-lab/system-data)
+20
+252
+26.74
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/ACCAD/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/ACCAD/accad_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[BMLhandball](http://www.biomotionlab.ca/)
+10
+649
+101.98
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/BMLhandball/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/BMLhandball/bmlhandball_license_updated.html)
+SMPL+H G
+Render
+[BMLmovi](http://www.biomotionlab.ca/movi/)
+89
+1864
+174.39
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/BMLmovi/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/BMLmovi/bmlmovi_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[BMLrub](https://www.biomotionlab.ca/)
+111
+3061
+522.69
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/BMLrub/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/BMLrub/bmlrub_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[CMU](http://mocap.cs.cmu.edu/)
+96
+1983
+543.49
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/CMU/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/CMU/cmu_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[CNRS](https://motion-database.humanoids.kit.edu/)
+2
+79
+9.61
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/CNRS/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/CNRS/cnrs_kit_license_updated.html)
+SMPL-X G
+SMPL-X N
+Render
+[DanceDB](https://dancedb.cs.ucy.ac.cy/)
+20
+151
+203.38
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/DanceDB/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/DanceDB/dancedb_license_updated.html)
+SMPL+H G
+SMPL-X G
+Render
+[DFaust](https://dfaust.is.tue.mpg.de/)
+10
+129
+5.72
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/DFaust/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/DFaust/dfaust_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[EKUT](https://motion-database.humanoids.kit.edu/)
+4
+349
+30.74
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/EKUT/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/EKUT/ekut_kit_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[EyesJapanDataset](http://mocapdata.com/)
+12
+750
+397.04
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/EyesJapanDataset/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/EyesJapanDataset/eyesjapandataset_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[GRAB](https://grab.is.tue.mpg.de/)
+10
+1340
+226.59
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/GRAB/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/GRAB/grab_license_updated.html)
+SMPL+H G
+SMPL+H N
+SMPL-X G
+SMPL-X N
+[HDM05](http://resources.mpi-inf.mpg.de/HDM05/)
+(aka MPI_HDM05)
+4
+215
+144.54
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/HDM05/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/HDM05/hdm05_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[HUMAN4D](https://tofis.github.io/human4d_dataset/)
+8
+148
+72.60
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/HUMAN4D/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/HUMAN4D/human4d_license_updated.html)
+SMPL+H G
+SMPL-X G
+Render
+[HumanEva](http://humaneva.is.tue.mpg.de/)
+3
+28
+8.47
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/HumanEva/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/HumanEva/humaneva_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[KIT](https://motion-database.humanoids.kit.edu/)
+55
+4232
+661.84
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/KIT/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/KIT/kit_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+SMPL+H G (Mirror)
+SMPL-X G (Mirror)
+SMPL-X N (Mirror)
+Render (Mirror)
+[MoSh](https://mosh.is.tuebingen.mpg.de/)
+(aka MPI_mosh)
+19
+77
+16.53
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/MoSh/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/MoSh/mosh_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[PosePrior](https://poseprior.is.tue.mpg.de/)
+(aka MPI_Limits)
+3
+35
+20.82
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/PosePrior/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/PosePrior/poseprior_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[SFU](https://mocap.cs.sfu.ca/)
+7
+44
+15.23
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/SFU/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/SFU/sfu_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[SOMA](https://soma.is.tue.mpg.de/)
+2
+69
+18.27
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/SOMA/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/SOMA/soma_license_updated.html)
+SMPL+H G
+SMPL+H N
+SMPL-X G
+SMPL-X N
+Render
+[SSM](https://amass.is.tue.mpg.de/)
+(aka SSM_synced)
+3
+30
+1.87
+[License](https://download.is.tue.mpg.de/amass/licenses2024/SSM/ssm_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[TCDHands](https://people.rennes.inria.fr/Ludovic.Hoyet/fingers.shtml)
+(aka TCD_handMocap)
+1
+62
+8.37
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/TCDHands/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/TCDHands/tcdhands_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[TotalCapture](https://cvssp.org/data/totalcapture/)
+5
+37
+41.10
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/TotalCapture/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/TotalCapture/totalcapture_license_updated.html)
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[Transitions](http://amass.is.tue.mpg.de/)
+(aka Transitions_mocap)
+1
+110
+15.10
+SMPL+H G
+SMPL-X G
+SMPL-X N
+Render
+[WEIZMANN](https://motion-database.humanoids.kit.edu/)
+5
+2222
+505.35
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/WEIZMANN/citation.bib)
+[License](https://download.is.tue.mpg.de/amass/licenses2024/WEIZMANN/weizmann_kit_license_updated.html)
+SMPL-X G
+SMPL-X N
+Render
+24
+500
+17916
+3772.45
+Additional datasets
+The following datasets were not part of the original AMASS release. Please be sure to follow their license agreements and cite them separately.
+Updated
+Subjects
+Motions
+Authors
+Required citation
+Acknowledgements
+Bodies
+[MOYO](https://moyo.is.tue.mpg.de/index.html)
+2024-11-08
+1
+181
+337
+Tripathi et al.
+[Citation](https://download.is.tue.mpg.de/amass/citations_acknowledgements/moyo_citation.txt)
+[Acknowledgements](https://download.is.tue.mpg.de/amass/citations_acknowledgements/moyo_acknowledgements.txt)
+SMPL+H G
+SMPL+H N
+SMPL-X G
+SMPL-X N
+Renders
+[LARa](https://zenodo.org/records/3862782)
+2025-02-24
+16
+452
+Niemann et al.
+[Citation](https://download.is.tue.mpg.de/amass/licenses2024/LARa/citation.bib)
+SMPL+H G
+SMPL+H N
+SMPL-X G
+SMPL-X N
+To download additional data for SSM and DYNA, including 4D scans, please check the
+[Extra](https://amass.is.tue.mpg.de/extra.php)
+page.
+© 2020 Max-Planck-Gesellschaft
+-
+[Imprint](https://amass.is.tue.mpg.de/imprint.html)
+-
+[Privacy Policy](https://amass.is.tue.mpg.de/privacy-policy.html)
+-
+[License](https://amass.is.tue.mpg.de/license.html)
+[Register](https://amass.is.tue.mpg.de/register.php)
+[Sign In](https://amass.is.tue.mpg.de/login.php)
+© 2020 Max-Planck-Gesellschaft
+Accept license
+×
+Accept
+Deny
+
+--- SMPL ---
+SMPL
+svg:not(:root).svg-inline--fa{overflow:visible}.svg-inline--fa{display:inline-block;font-size:inherit;height:1em;overflow:visible;vertical-align:-.125em}.svg-inline--fa.fa-lg{vertical-align:-.225em}.svg-inline--fa.fa-w-1{width:.0625em}.svg-inline--fa.fa-w-2{width:.125em}.svg-inline--fa.fa-w-3{width:.1875em}.svg-inline--fa.fa-w-4{width:.25em}.svg-inline--fa.fa-w-5{width:.3125em}.svg-inline--fa.fa-w-6{width:.375em}.svg-inline--fa.fa-w-7{width:.4375em}.svg-inline--fa.fa-w-8{width:.5em}.svg-inline--fa.fa-w-9{width:.5625em}.svg-inline--fa.fa-w-10{width:.625em}.svg-inline--fa.fa-w-11{width:.6875em}.svg-inline--fa.fa-w-12{width:.75em}.svg-inline--fa.fa-w-13{width:.8125em}.svg-inline--fa.fa-w-14{width:.875em}.svg-inline--fa.fa-w-15{width:.9375em}.svg-inline--fa.fa-w-16{width:1em}.svg-inline--fa.fa-w-17{width:1.0625em}.svg-inline--fa.fa-w-18{width:1.125em}.svg-inline--fa.fa-w-19{width:1.1875em}.svg-inline--fa.fa-w-20{width:1.25em}.svg-inline--fa.fa-pull-left{margin-right:.3em;width:auto}.svg-inline--fa.fa-pull-right{margin-left:.3em;width:auto}.svg-inline--fa.fa-border{height:1.5em}.svg-inline--fa.fa-li{width:2em}.svg-inline--fa.fa-fw{width:1.25em}.fa-layers svg.svg-inline--fa{bottom:0;left:0;margin:auto;position:absolute;right:0;top:0}.fa-layers{display:inline-block;height:1em;position:relative;text-align:center;vertical-align:-.125em;width:1em}.fa-layers svg.svg-inline--fa{-webkit-transform-origin:center center;transform-origin:center center}.fa-layers-counter,.fa-layers-text{display:inline-block;position:absolute;text-align:center}.fa-layers-text{left:50%;top:50%;-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);-webkit-transform-origin:center center;transform-origin:center center}.fa-layers-counter{background-color:#ff253a;border-radius:1em;-webkit-box-sizing:border-box;box-sizing:border-box;color:#fff;height:1.5em;line-height:1;max-width:5em;min-width:1.5em;overflow:hidden;padding:.25em;right:0;text-overflow:ellipsis;top:0;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:top right;transform-origin:top right}.fa-layers-bottom-right{bottom:0;right:0;top:auto;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:bottom right;transform-origin:bottom right}.fa-layers-bottom-left{bottom:0;left:0;right:auto;top:auto;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:bottom left;transform-origin:bottom left}.fa-layers-top-right{right:0;top:0;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:top right;transform-origin:top right}.fa-layers-top-left{left:0;right:auto;top:0;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:top left;transform-origin:top left}.fa-lg{font-size:1.33333em;line-height:.75em;vertical-align:-.0667em}.fa-xs{font-size:.75em}.fa-sm{font-size:.875em}.fa-1x{font-size:1em}.fa-2x{font-size:2em}.fa-3x{font-size:3em}.fa-4x{font-size:4em}.fa-5x{font-size:5em}.fa-6x{font-size:6em}.fa-7x{font-size:7em}.fa-8x{font-size:8em}.fa-9x{font-size:9em}.fa-10x{font-size:10em}.fa-fw{text-align:center;width:1.25em}.fa-ul{list-style-type:none;margin-left:2.5em;padding-left:0}.fa-ul>li{position:relative}.fa-li{left:-2em;position:absolute;text-align:center;width:2em;line-height:inherit}.fa-border{border:solid .08em #eee;border-radius:.1em;padding:.2em .25em .15em}.fa-pull-left{float:left}.fa-pull-right{float:right}.fa.fa-pull-left,.fab.fa-pull-left,.fal.fa-pull-left,.far.fa-pull-left,.fas.fa-pull-left{margin-right:.3em}.fa.fa-pull-right,.fab.fa-pull-right,.fal.fa-pull-right,.far.fa-pull-right,.fas.fa-pull-right{margin-left:.3em}.fa-spin{-webkit-animation:fa-spin 2s infinite linear;animation:fa-spin 2s infinite linear}.fa-pulse{-webkit-animation:fa-spin 1s infinite steps(8);animation:fa-spin 1s infinite steps(8)}@-webkit-keyframes fa-spin{0%{-webkit-transform:rotate(0);transform:rotate(0)}100%{-webkit-transform:rotate(360deg);transform:rotate(360deg)}}@keyframes fa-spin{0%{-webkit-transform:rotate(0);transform:rotate(0)}100%{-webkit-transform:rotate(360deg);transform:rotate(360deg)}}.fa-rotate-90{-webkit-transform:rotate(90deg);transform:rotate(90deg)}.fa-rotate-180{-webkit-transform:rotate(180deg);transform:rotate(180deg)}.fa-rotate-270{-webkit-transform:rotate(270deg);transform:rotate(270deg)}.fa-flip-horizontal{-webkit-transform:scale(-1,1);transform:scale(-1,1)}.fa-flip-vertical{-webkit-transform:scale(1,-1);transform:scale(1,-1)}.fa-flip-horizontal.fa-flip-vertical{-webkit-transform:scale(-1,-1);transform:scale(-1,-1)}:root .fa-flip-horizontal,:root .fa-flip-vertical,:root .fa-rotate-180,:root .fa-rotate-270,:root .fa-rotate-90{-webkit-filter:none;filter:none}.fa-stack{display:inline-block;height:2em;position:relative;width:2em}.fa-stack-1x,.fa-stack-2x{bottom:0;left:0;margin:auto;position:absolute;right:0;top:0}.svg-inline--fa.fa-stack-1x{height:1em;width:1em}.svg-inline--fa.fa-stack-2x{height:2em;width:2em}.fa-inverse{color:#fff}.sr-only{border:0;clip:rect(0,0,0,0);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px}.sr-only-focusable:active,.sr-only-focusable:focus{clip:auto;height:auto;margin:0;overflow:visible;position:static;width:auto}
+.cke{visibility:hidden;}
+div#tarteaucitronRoot.tarteaucitronBeforeVisible:before {content: '';position: fixed;width: 100%;height: 100%;background: white;top: 0;left: 0;z-index: 999;opacity: 0.5;}div#tarteaucitronAlertBig:before {content: '☝ 🍪';font-size: 35px;}body #tarteaucitronRoot div#tarteaucitronAlertBig {width: 60%;min-width: 285px;height: auto;margin: auto;left: 50%;top: 50%;transform: translate(-50%, -50%);box-shadow: 0 0 9000px #000;border-radius: 20px;padding: 35px 25px;}span#tarteaucitronDisclaimerAlert {padding: 0 30px;}#tarteaucitronRoot span#tarteaucitronDisclaimerAlert {margin: 10px 0 30px;display: block;text-align: center;font-size: 21px;}@media screen and (max-width: 900px) {div#tarteaucitronAlertBig button {margin: 0 auto 10px!important;display: block!important;}}
+[Home](https://smpl.is.tue.mpg.de/index.html)
+[SMPL-Model License](https://smpl.is.tue.mpg.de/modellicense.html)
+[SMPL-Body License](https://smpl.is.tue.mpg.de/bodylicense.html)
+[Videos](https://smpl.is.tue.mpg.de/videos.html)
+[Downloads](https://smpl.is.tue.mpg.de/download.php)
+[FAQ](https://smpl.is.tue.mpg.de/faq.html)
+[SMPL](https://smpl.is.tue.mpg.de/index.html)
+[SMPL](https://smpl.is.tue.mpg.de/index.html)
+[Home](https://smpl.is.tue.mpg.de/index.html)
+[SMPL-Model License](https://smpl.is.tue.mpg.de/modellicense.html)
+[SMPL-Body License](https://smpl.is.tue.mpg.de/bodylicense.html)
+[Videos](https://smpl.is.tue.mpg.de/videos.html)
+[Downloads](https://smpl.is.tue.mpg.de/download.php)
+[FAQ](https://smpl.is.tue.mpg.de/faq.html)
+[Sign In](https://smpl.is.tue.mpg.de/login.php)
+[Logout](https://smpl.is.tue.mpg.de/logout.php)
+Downloads
+Model and related tools
+For questions about the code, please make sure to check the FAQs before contacting us. The SMPL model is available for non-commercial research, education, and artistic purposes only. By downloading the model you agree to the
+[license terms.](https://smpl.is.tue.mpg.de/modellicense.html)
+The model is also available for commercial purposes by contacting
+[sales@meshcapade.com](mailto:sales@meshcapade.com)
+.
+If you are unsure whether your use counts as non-commercial please contact
+[smpl@tuebingen.mpg.de](mailto:smpl@tuebingen.mpg.de)
+before downloading the model.
+Overview:
+SMPL is an easy-to-use, realistic, model of the of the human body that is useful for animation and computer vision.
+SMPL lets you create realistic human body shapes with realistic deformations.
+Available here is a version of SMPL that is similar to that described in
+[this paper.](http://files.is.tue.mpg.de/black/papers/SMPL2015.pdf)
+SMPL for Python Users
+Included in this download:
+Model files
+PKL file format
+separate male and female model files
+Code
+Functions to load / save SMPL models
+‘Hello World’ sample scripts
+System Requirements
+Operating system: macOS, Linux
+Python 2.7 Dependencies
+[Numpy & Scipy](http://www.scipy.org/scipylib/download.html)
+[Chumpy](https://github.com/mattloper/chumpy)
+[OpenCV](https://opencv.org/)
+Download
+[Download version 1.0.0 for Python 2.7 (female/male. 10 shape PCs)](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=SMPL_python_v.1.0.0.zip)
+[Download version 1.1.0 for Python 2.7 (female/male/neutral, 300 shape PCs)](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=SMPL_python_v.1.1.0.zip)
+[Download UV map in OBJ format](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=smpl_uv_20200910.zip)
+Julia Models
+[Male (43 MB)](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=julia/SMPL_MALE.npz)
+[Female (43 MB)](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=julia/SMPL_FEMALE.npz)
+[Neutral (43 MB)](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=julia/SMPL_NEUTRAL.npz)
+DMPLs for AMASS
+8 DMPL components to control soft tissue dynamics
+Available for male, female, and neutral models
+Includes .npz numpy arrays
+For an example usage refer to project
+[AMASS](https://amass.is.tuebingen.mpg.de/)
+If you use DMPLs, in addition to SMPL, please also cite the reference for
+[Dyna](http://dyna.is.tue.mpg.de/)
+Download
+[Download DMPLs compatible with SMPL](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=dmpls.tar.xz)
+Sample Animated Bodies
+These are FBX files that you can load and play in most graphics software
+[Download sample animated bodies FBX files](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=SMPL_sample_animations.zip)
+SMPL for Maya
+Included in this download:
+Male and female models (FBX format)
+Female model: basicModel_f_lbs_10_207_0_v1.0.2.fbx
+MD5: 81a57177f8cbf584f8d6379742c99e2e
+Also referred to as:
+SMPL_female_010_207.fbx
+Male model: basicModel_m_lbs_10_207_0_v1.0.2.fbx
+MD5: 67542f27aa4bc6b8d12da28fdce51539
+Also referred to as:
+SMPL_male_010_207.fbx
+Default mesh. The average SMPL body.
+Rigged skeleton, using LBS
+10 shape blendshapes
+207 corrective pose blendshapes
+UV map
+Script and data to use SMPL in Maya
+If you want to edit body shape or repose the mesh, you need to run the script.
+README.txt for installation and license instructions
+Dependencies
+Numpy is required for running this script. Numpy is a Python module that can be installed following the instructions given
+[here](http://docs.scipy.org/doc/numpy/user/install.html)
+or
+[here](http://blog.animateshmanimate.com/post/115538511578/python-numpy-and-maya-osx-and-windows)
+Please make sure you have numpy installed on your computer and accessible through Maya's Python. We are working towards removing this dependency.
+Download
+[Release notes for version 1.0.2](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=release_notes_v1.0.2.txt)
+[Download version 1.0.2 for Maya](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=SMPL_maya.zip)
+[Download SMPL-Maya loader by BodyLabs](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=SMPL_maya_bodylabs_v.1.0.0.zip)
+Tutorial videos
+Tutorial videos for Maya can be found in the
+[Videos](https://smpl.is.tue.mpg.de/videos.html)
+section.
+SMPL for Unity
+Included in this download:
+Male and female models (Unity-compatible FBX format)
+Default mesh. The average SMPL body.
+Rigged skeleton, using LBS
+10 shape blendshapes
+207 corrective pose blendshapes
+UV map
+Scripts and sample Unity project to help you get started
+If you want to edit body shape or repose the mesh, you need the scripts.
+README.txt for installation and license instructions
+How-to_SMPLinUnity.pdf for step-by-step guide for using SMPL in Unity
+System Requirements
+Unity 5+ (tested on macOS Sierra and Windows 10)
+Download
+[Download version 1.0.0 for Unity](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=SMPL_unity_v.1.0.0.zip)
+How to use SMPL in Unity
+[Download tutorial (PDF)](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=How_to_SMPLinUnity.pdf)
+SMPL for Blender
+This Blender add-on allows you to add SMPL skinned meshes to your current Blender scene. Each imported SMPL mesh consists of a shape specific rig, as well as shape keys (blend shapes) for shape and pose correctives.
+Requirements: Blender 2.80+
+Additional dependencies: None
+Used SMPL model: SMPL v1.0 with 10 shape components
+[Installation instructions](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=README.md)
+[Download SMPL Blender Add-on (20210611, 34MB)](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=smpl_blender_addon_20210611.zip)
+SMPL for Unreal Plugin (USMPL)
+The USMPL plugin allows a user to put the SMPL model in Unreal Engine and control its pose using ROS in real-time. The plugin is available at https://github.com/robot-perception-group/USMPL. Following are the gender-specific models for the USMPL plugin.
+[basicModel_f_lbs_10_207_0_v1.0.0.npz](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=basicModel_f_lbs_10_207_0_v1.0.0.npz)
+[basicmodel_m_lbs_10_207_0_v1.0.0.npz](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=basicmodel_m_lbs_10_207_0_v1.0.0.npz)
+© 2024 Max-Planck-Gesellschaft
+-
+[Imprint](https://smpl.is.tue.mpg.de/imprint.html)
+-
+[Privacy Policy](https://smpl.is.tue.mpg.de/privacy-policy.html)
+-
+[License](https://smpl.is.tue.mpg.de/modellicense.html)
+[Register](https://smpl.is.tue.mpg.de/register.php)
+[Sign In](https://smpl.is.tue.mpg.de/login.php)
+© 2024 Max-Planck-Gesellschaft
+var xmlhttp = new XMLHttpRequest();
+      xmlhttp.onreadystatechange = function() {
+      	if (this.readyState == 4 && this.status == 200) {
+      		if(this.responseText == true) {
+      			document.getElementById("div_login1").style.display = "none";
+      			document.getElementById("div_login2").style.display = "none";
+      			document.getElementById("div_logout1").style.display = "block";
+      		}
+      	}
+      };
+      xmlhttp.open('GET', 'skin/default_gdpr/ajax_sessionstate.php', true);
+      xmlhttp.send();
+var currentLanguage = document.documentElement.lang;
+window.tarteaucitronForceLanguage = currentLanguage;
+tarteaucitron.init({
+    "privacyUrl": "privacy-policy.html", /* Privacy policy url */
+    "bodyPosition": "bottom", /* or top to bring it as first element for accessibility */
+
+    "hashtag": "#tarteaucitron", /* Open the panel with this hashtag */
+    "cookieName": "tarteaucitron", /* Cookie name */
+
+    "orientation": "middle", /* Banner position (top - bottom - middle - popup) */
+
+    "groupServices": false, /* Group services by category */
+    "serviceDefaultState": "wait", /* Default state (true - wait - false) */
+
+    "showAlertSmall": false, /* Show the small banner on bottom right */
+    "cookieslist": true, /* Show the cookie list */
+    
+    "showIcon": true, /* Show cookie icon to manage cookies */
+    // "iconSrc": "", /* Optionnal: URL or base64 encoded image */
+    "iconPosition": "BottomRight", /* Position of the icon between BottomRight, BottomLeft, TopRight and TopLeft */
+
+    "adblocker": false, /* Show a Warning if an adblocker is detected */
+
+    "DenyAllCta" : true, /* Show the deny all button */
+    "AcceptAllCta" : true, /* Show the accept all button when highPrivacy on */
+    "highPrivacy": true, /* HIGHLY RECOMMANDED Disable auto consent */
+
+    "handleBrowserDNTRequest": false, /* If Do Not Track == 1, disallow all */
+
+    "removeCredit": true, /* Remove credit link */
+    "moreInfoLink": true, /* Show more info link */
+    "useExternalCss": false, /* If false, the tarteaucitron.css file will be loaded */
+    "useExternalJs": false, /* If false, the tarteaucitron.services.js file will be loaded */
+
+    //"cookieDomain": ".my-multisite-domaine.fr", /* Shared cookie for subdomain website */
+
+    "readmoreLink": "", /* Change the default readmore link pointing to tarteaucitron.io */
+    
+    "mandatory": false, /* Show a message about mandatory cookies */
+    "mandatoryCta": false /* Show the disabled accept button when mandatory on */
+});
+(tarteaucitron.job = tarteaucitron.job || []).push('youtube');
+tarteaucitron.user.matomoHost = 'https://piwik.tuebingen.mpg.de/';tarteaucitron.user.matomoCustomJSPath = 'https://piwik.tuebingen.mpg.de/matomo.js';
+tarteaucitron.user.matomoId = 70;
+        (tarteaucitron.job = tarteaucitron.job || []).push('matomocloud');
+Cookies management panel
+Close
+Cookies management panel
+By allowing these third party services, you accept their cookies and the use of tracking technologies necessary for their proper functioning.
+Privacy policy
+Preference for all services
+Allow all cookies
+Deny all cookies
+APIs
+APIs are used to load scripts: geolocation, search engines, translations, ...
+Advertising network
+Ad networks can generate revenue by selling advertising space on the site.
+Audience measurement
+The audience measurement services used to generate useful statistics attendance to improve the site.
+Matomo Cloud (privacy by design)
+allowed
+-
+This service has not installed any cookie.
+[Read more](https://tarteaucitron.io/service/matomocloud/)
+-
+[View the official website](https://matomo.org/faq/general/faq_146/)
+Allow
+Deny
+Comments
+Comments managers facilitate the filing of comments and fight against spam.
+Other
+Services to display web content.
+Social networks
+Social networks can improve the usability of the site and help to promote it via the shares.
+Support
+Support services allow you to get in touch with the site team and help to improve it.
+Videos
+Video sharing services help to add rich media on the site and increase its visibility.
+YouTube
+allowed
+-
+This service has not installed any cookie.
+[Read more](https://tarteaucitron.io/service/youtube/)
+-
+[View the official website](https://policies.google.com/privacy)
+Allow
+Deny
+This website does not use any cookie requiring your consent.
+This site uses cookies and gives you control over what you want to activate
+OK, accept all
+Deny all cookies
+Personalize
+Privacy policy
+

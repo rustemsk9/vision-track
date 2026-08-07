@@ -1,0 +1,32 @@
+Addon starting.
+Running custom build tasks (if any).
+Starting blender: /Users/Guest/BlenderExtract/Blender/Blender.app/Contents/MacOS/Blender --python /Users/Guest/.vscode/extensions/jacqueslucke.blender-development-0.0.31/pythonFiles/launch.py
+With ENV Vars: {
+  "ADDONS_TO_LOAD": "[]",
+  "VSCODE_EXTENSIONS_REPOSITORY": "vscode_development",
+  "VSCODE_LOG_LEVEL": "debug",
+  "EDITOR_PORT": "52511"
+}
+Python debug configuration: {
+  "name": "Python at Port 60021",
+  "request": "attach",
+  "type": "python",
+  "port": 60021,
+  "host": "localhost",
+  "pathMappings": [
+    {
+      "localRoot": "/Users/Guest/vision-track",
+      "remoteRoot": "/Users/Guest/vision-track"
+    },
+    {
+      "localRoot": "/Users/Guest/BlenderExtract/Blender/Blender.app/Contents/MacOS/5.1/scripts",
+      "remoteRoot": "/Users/Guest/BlenderExtract/Blender/Blender.app/Contents/MacOS/5.1/scripts"
+    },
+    {
+      "localRoot": "/Users/Guest/vision-track/blender_addon",
+      "remoteRoot": "/Users/Guest/vision-track/blender_addon"
+    }
+  ],
+  "justMyCode": true,
+  "identifier": "cf0ab177388f"
+}

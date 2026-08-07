@@ -1,0 +1,13 @@
+{
+  "blender.executables": [
+    {
+      "name": "Portable Blender",
+      "path": "/Users/Guest/BlenderExtract/Blender/Blender.app/Contents/MacOS/Blender",
+      "isDefault": true
+    }
+  ],
+  "blender.addon.moduleName": "blender_addon",
+  "blender.addon.sourceDirectory": "blender_addon",
+  "blender.addon.reloadOnSave": true,
+  "blender.addon.logLevel": "debug"
+}

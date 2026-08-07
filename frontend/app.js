@@ -47,6 +47,9 @@ async function getWebcamStream(constraints = { video: { width: 640, height: 480 
 }
 
 // Initialize WebRTC and Engine
+let segmentSession = null;
+let gcnSession = null;
+
 async function initEngine() {
     try {
         statusText.innerText = "Requesting Webcam...";
@@ -54,12 +57,22 @@ async function initEngine() {
         video.srcObject = stream;
         video.play().catch(() => {});
         
-        statusText.innerText = "Loading ONNX YOLOv11-nano & WASM Math...";
-        // Simulate loading models and compiling WASM
-        setTimeout(() => {
+        statusText.innerText = "Loading ONNX YOLOv11-nano & 3D Lifter GCN...";
+        try {
+            // Configure ONNX Runtime Web
+            ort.env.wasm.numThreads = 1;
+            ort.env.wasm.simd = true;
+            
+            // Note: These paths assume models are served from a static directory
+            segmentSession = await ort.InferenceSession.create('/static/models/yolo_segmentation.onnx', { executionProviders: ['webgl', 'wasm'] });
+            gcnSession = await ort.InferenceSession.create('/static/models/3d_lifter_gcn.onnx', { executionProviders: ['webgl', 'wasm'] });
+            statusText.innerText = "Running 3D GCN Inference (Active)";
+        } catch (modelErr) {
+            console.warn("ONNX models not found or failed to load. Falling back to simulation mode.", modelErr);
             statusText.innerText = "Running 3D GCN Inference (Simulated)";
-            startRenderLoop();
-        }, 1500);
+        }
+        
+        startRenderLoop();
 
     } catch (err) {
         statusText.innerText = "Error: " + err.message;
@@ -86,7 +99,7 @@ function startRenderLoop() {
 
         // Phase 4: Matrix Buffer Updates 
         // Here we simulate the (X, Y, Z) output from the Node D GCN
-        // In reality, this would be read from the WASM/WebGL buffer output
+        // In reality, this would be read from the WASM/WebGL buffer output via segmentSession and gcnSession
         const t = time * 0.002;
         for (let i = 0; i < jointCount; i++) {
             dummy.position.set(

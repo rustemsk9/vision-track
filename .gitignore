@@ -1,0 +1,7 @@
+*.mp4
+*.mov
+training_data_output/
+*.pyc
+*.npz
+*.tar.bz2
+*.zip
