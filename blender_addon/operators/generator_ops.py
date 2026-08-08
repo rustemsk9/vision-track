@@ -46,8 +46,6 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
         logger = logging.getLogger(__name__)
         logger.info(f"Starting Batch Generation from directory: {directory}")
 
-        self.setup_imac_camera()
-        
         # Dynamic Rig Detection
         smpl_rig = None
         for obj in bpy.context.scene.objects:
@@ -62,6 +60,9 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
             return {'CANCELLED'}
             
         logger.info(f"Found SMPL Rig: {smpl_rig.name}")
+        
+        # Setup Camera tracking the rig
+        self.setup_imac_camera(smpl_rig)
             
         # Detect Mesh (assuming it's a child of the rig or has 'Mesh' in name)
         smpl_mesh = None
@@ -77,8 +78,13 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
             logger.info(f"Found SMPL Mesh: {smpl_mesh.name}")
             self.apply_zero_raytracing_masking(smpl_mesh)
             
-        # Find all .npz files
-        npz_files = [f for f in os.listdir(directory) if f.endswith('.npz')]
+        # Find all .npz files recursively
+        npz_files = []
+        for root, dirs, files in os.walk(directory):
+            for f in files:
+                if f.endswith('.npz'):
+                    npz_files.append(os.path.join(root, f))
+                    
         if not npz_files:
             msg = f"No .npz files found in {directory}"
             self.report({'ERROR'}, msg)
@@ -110,12 +116,21 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
         bpy.context.scene.render.resolution_percentage = 100
 
         # Batch Processing Loop
-        for npz_file in npz_files:
-            filepath = os.path.join(directory, npz_file)
-            base_name = os.path.splitext(npz_file)[0]
-            seq_output_dir = os.path.join(output_dir, base_name)
+        used_names = set()
+        for filepath in npz_files:
+            base_name = os.path.splitext(os.path.basename(filepath))[0]
             
-            logger.info(f"Processing sequence: {base_name}")
+            # Ensure unique output directory name
+            unique_name = base_name
+            index = 1
+            while unique_name in used_names or os.path.exists(os.path.join(output_dir, unique_name)):
+                unique_name = f"{base_name}_{index}"
+                index += 1
+            
+            used_names.add(unique_name)
+            seq_output_dir = os.path.join(output_dir, unique_name)
+            
+            logger.info(f"Processing sequence: {unique_name} (from {filepath})")
             
             # 1. Real-world Camera Angle & Coordinate Fix
             # Camera placed at 3.5m distance to fit full legs, chest/eye height
@@ -146,7 +161,7 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
         logging.shutdown()
         return {'FINISHED'}
 
-    def setup_imac_camera(self):
+    def setup_imac_camera(self, target_rig=None):
         if "iMacCamera" in bpy.data.objects:
             cam_obj = bpy.data.objects["iMacCamera"]
         else:
@@ -159,6 +174,23 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
         cam_obj.location = (0, -2.5, 1.2)
         cam_obj.rotation_euler = (math.radians(90), 0, 0)
         bpy.context.scene.camera = cam_obj
+        
+        if target_rig:
+            # Clear existing constraints
+            cam_obj.constraints.clear()
+            
+            # Add Track To constraint to always center the human
+            track_const = cam_obj.constraints.new(type='TRACK_TO')
+            track_const.target = target_rig
+            
+            # Target the Spine or Pelvis to keep the upper body centered
+            if 'Spine1' in target_rig.pose.bones:
+                track_const.subtarget = 'Spine1'
+            elif 'Pelvis' in target_rig.pose.bones:
+                track_const.subtarget = 'Pelvis'
+                
+            track_const.track_axis = 'TRACK_NEGATIVE_Z'
+            track_const.up_axis = 'UP_Y'
 
     def load_amass_data(self, rig, filepath):
         """Loads AMASS .npz file and keyframes the rig"""
