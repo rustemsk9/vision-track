@@ -1,3 +1,9 @@
+# RETIRED FROM MAIN TRAINING PIPELINE
+# MATExtractor is no longer used in dataset.py or train_gcn.py.
+# Training now uses 2D camera-projected keypoints from the Blender addon (keypoints_2d in joints.jsonl),
+# which match exactly the YOLOv8-pose output used at inference time in the web engine.
+# This file is kept for reference only.
+
 import cv2
 import numpy as np
 from skimage.morphology import medial_axis

@@ -278,14 +278,13 @@ async function runEndToEndPipeline(time) {
                         const gcnResults = await gcnSession.run({ input_nodes: tensorNodes, input_adj: tensorAdj });
                         const outputData = gcnResults.output_joints.data;
 
-                        const rootX = outputData[0 * 4 + 0];
-                        const rootY = outputData[0 * 4 + 1];
-                        const rootZ = outputData[0 * 4 + 2];
-
+                        // Model now outputs PELVIS-RELATIVE coords (trained with pelvis subtracted).
+                        // Output channels: [Blender_X, Blender_Y(depth), Blender_Z(height), Sigma_Z]
+                        // Remap to Three.js: X=X, Y=Blender_Z(height), Z=-Blender_Y(depth)
                         for (let i = 0; i < 17; i++) {
-                            currentJoints3D[i].x = outputData[i * 4 + 0] - rootX;
-                            currentJoints3D[i].y = outputData[i * 4 + 2] - rootZ; // Z height to Y
-                            currentJoints3D[i].z = outputData[i * 4 + 1] - rootY; // Y depth to Z
+                            currentJoints3D[i].x = -(outputData[i * 4 + 0]); // Mirror X for webcam
+                            currentJoints3D[i].y = outputData[i * 4 + 2];    // Blender Z → Three.js Y (height)
+                            currentJoints3D[i].z = -outputData[i * 4 + 1];   // Blender Y → Three.js -Z (depth)
                         }
 
                     } else {
