@@ -34,7 +34,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <script>
-// Phase 3 & 4: Web Architecture, Real-Time Diagnostic Logging, and 3D Visualization
+// Phase 3 & 4: Web Architecture, 2D YOLO Pose Keypoints & 3D Kinetic Lifter Engine
 
 const video = document.getElementById('webcam');
 const statusText = document.getElementById('status-text');
@@ -51,7 +51,7 @@ function logMsg(msg, level = 'info') {
     }
 }
 
-// Offscreen 640x640 Canvas for YOLO Feature Preprocessing
+// Offscreen 640x640 Canvas for YOLO Preprocessing
 const MODEL_SIZE = 640;
 const offscreenCanvas = document.createElement('canvas');
 offscreenCanvas.width = MODEL_SIZE;
@@ -84,9 +84,9 @@ renderer.setSize(640, 480);
 document.getElementById('container').appendChild(renderer.domElement);
 
 // Lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
 scene.add(ambientLight);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
 directionalLight.position.set(0, 10, 5);
 scene.add(directionalLight);
 
@@ -132,22 +132,18 @@ async function getWebcamStream(constraints = { video: { width: 640, height: 480 
 }
 
 // Global ONNX Sessions & State
-let segmentSession = null;
+let poseSession = null;
 let gcnSession = null;
 let isInferringPipeline = false;
 let lastLogTime = 0;
 
-// State holding live 2D & 3D Joint positions
-let detected2DBox = null;
-let currentJoints3D = new Array(17).fill(0).map(() => ({ x: null, y: null, z: null }));
+// World space tracking state
+let personCenterX = 0.5;
+let personCenterY = 0.5;
 
-// Static Adjacency matrix for 17 GCN nodes
-const staticAdj = new Float32Array(17 * 17);
-for (let i = 0; i < 17; i++) staticAdj[i * 17 + i] = 1.0;
-for (const [i, j] of bonePairs) {
-    staticAdj[i * 17 + j] = 1.0;
-    staticAdj[j * 17 + i] = 1.0;
-}
+// State holding live 2D & 3D Joint positions
+let currentJoints3D = new Array(17).fill(0).map(() => ({ x: 0, y: 0, z: 0 }));
+let keypoints2D = new Array(17).fill(0).map(() => ({ x: null, y: null, conf: 0 }));
 
 async function initEngine() {
     logMsg("Initializing 3D Web Engine & Diagnostic Logger...");
@@ -164,26 +160,21 @@ async function initEngine() {
             ort.env.wasm.numThreads = 1;
             ort.env.wasm.simd = true;
             
-            // Load YOLOv11-nano / YOLOv8n
-            logMsg("Attempting to load YOLO model /static/yolo11n.onnx...");
+            const providers = ['webgl', 'wasm'];
+
+            logMsg("Loading 2D Pose Model (/static/yolov8n-pose.onnx)...");
             try {
-                segmentSession = await ort.InferenceSession.create('/static/yolo11n.onnx', { executionProviders: ['wasm'] });
-                logMsg("Successfully loaded YOLOv11-nano (/static/yolo11n.onnx).");
-            } catch (y11Err) {
-                logMsg("yolo11n.onnx not found. Falling back to /static/yolov8n.onnx...", "warn");
-                segmentSession = await ort.InferenceSession.create('/static/yolov8n.onnx', { executionProviders: ['wasm'] });
-                logMsg("Successfully loaded YOLOv8-nano (/static/yolov8n.onnx).");
+                poseSession = await ort.InferenceSession.create('/static/yolov8n-pose.onnx', { executionProviders: providers });
+                logMsg("Successfully loaded YOLOv8-Pose 2D Keypoint Model!");
+            } catch (poseErr) {
+                logMsg("yolov8n-pose.onnx failed on WebGL, attempting WASM...", "warn");
+                poseSession = await ort.InferenceSession.create('/static/yolov8n-pose.onnx', { executionProviders: ['wasm'] });
+                logMsg("Successfully loaded YOLOv8-Pose (WASM)!");
             }
 
-            // Load 3D Lifter GCN
-            logMsg("Loading 3D Lifter GCN (/static/models/3d_lifter_gcn.onnx)...");
-            gcnSession = await ort.InferenceSession.create('/static/models/3d_lifter_gcn.onnx', { executionProviders: ['wasm'] });
-            logMsg("Successfully loaded 3D Lifter GCN ONNX Model!", "info");
-            
-            statusText.innerText = "Running 3D GCN Inference (Active)";
+            statusText.innerText = "Running 3D Pose Inference (Active)";
         } catch (modelErr) {
             logMsg("Failed to load ONNX models: " + modelErr.message, "error");
-            console.warn("ONNX models fallback to dynamic kinetic preview mode.", modelErr);
             statusText.innerText = "Running 3D GCN Inference (Kinetic Preview)";
         }
         
@@ -201,76 +192,115 @@ async function runEndToEndPipeline(time) {
     const tStart = performance.now();
 
     try {
-        let box2D = detected2DBox;
+        let personFound = false;
 
-        // Step 1: Run 2D YOLO Detection on webcam video frame if segmentSession loaded
-        if (segmentSession) {
+        // Step 1: Run 2D YOLO Pose Keypoint Extraction
+        if (poseSession) {
             const inputTensor = preprocessVideoFrame();
             const feeds = {};
-            feeds[segmentSession.inputNames[0]] = inputTensor;
-            const yoloResults = await segmentSession.run(feeds);
-            const output = yoloResults[segmentSession.outputNames[0]].data; // [1, 84, 8400]
-            const num_anchors = Math.floor(output.length / 84);
+            feeds[poseSession.inputNames[0]] = inputTensor;
+            const poseResults = await poseSession.run(feeds);
+            const output = poseResults[poseSession.outputNames[0]].data; // [1, 56, 8400]
+            const numChannels = Math.floor(output.length / 8400);
 
-            let bestScore = 0.35;
-            let bestBox = null;
+            // Select CLOSEST person in front of iMac (Largest Bounding Box Area w * h)
+            let maxArea = 0;
+            let bestIdx = -1;
 
-            for (let i = 0; i < num_anchors; i++) {
-                const score = output[4 * num_anchors + i]; // Person class index 4
-                if (score > bestScore) {
-                    bestScore = score;
-                    const cx = (output[0 * num_anchors + i] / MODEL_SIZE) * 2.0 - 1.0;
-                    const cy = -((output[1 * num_anchors + i] / MODEL_SIZE) * 2.0 - 1.0);
-                    const w = (output[2 * num_anchors + i] / MODEL_SIZE) * 2.0;
-                    const h = (output[3 * num_anchors + i] / MODEL_SIZE) * 2.0;
-                    bestBox = { cx, cy, w, h, score };
+            for (let i = 0; i < 8400; i++) {
+                const score = output[4 * 8400 + i];
+                if (score > 0.20) {
+                    const w = output[2 * 8400 + i];
+                    const h = output[3 * 8400 + i];
+                    const area = w * h;
+                    if (area > maxArea) {
+                        maxArea = area;
+                        bestIdx = i;
+                    }
                 }
             }
 
-            if (bestBox) {
-                detected2DBox = bestBox;
-                box2D = bestBox;
-            }
-        }
+            if (bestIdx >= 0 && numChannels === 56) {
+                personFound = true;
 
-        // Step 2: Extract 17 2D node coordinates from detected box or motion vector
-        const nodesData = new Float32Array(17 * 5);
-        const t = time * 0.002;
-        const baseCx = box2D ? box2D.cx : Math.sin(t) * 0.5;
-        const baseCy = box2D ? box2D.cy : Math.cos(t * 0.5) * 0.3;
-        const baseH  = box2D ? box2D.h  : 1.8;
+                const getCOCO = (cIdx) => {
+                    const kx = output[(5 + cIdx * 3 + 0) * 8400 + bestIdx];
+                    const ky = output[(5 + cIdx * 3 + 1) * 8400 + bestIdx];
+                    const kc = output[(5 + cIdx * 3 + 2) * 8400 + bestIdx];
+                    return { x: kx, y: ky, conf: kc };
+                };
 
-        for (let i = 0; i < 17; i++) {
-            // Distribute 17 joints vertically along body height
-            const relY = (i / 16.0) - 0.5;
-            const relX = Math.sin(t + i * 0.3) * 0.15;
+                const nose = getCOCO(0);
+                const lShoulder = getCOCO(5), rShoulder = getCOCO(6);
+                const lElbow = getCOCO(7), rElbow = getCOCO(8);
+                const lWrist = getCOCO(9), rWrist = getCOCO(10);
+                const lHip = getCOCO(11), rHip = getCOCO(12);
+                const lKnee = getCOCO(13), rKnee = getCOCO(14);
+                const lAnkle = getCOCO(15), rAnkle = getCOCO(16);
 
-            nodesData[i * 5 + 0] = baseCx + relX;
-            nodesData[i * 5 + 1] = baseCy - (relY * baseH);
-            nodesData[i * 5 + 2] = 10.0; // scale
-            nodesData[i * 5 + 3] = 10.0; // r_laplacian
-            nodesData[i * 5 + 4] = 1.0;  // visibility
-        }
+                if (lHip && rHip && lShoulder && rShoulder) {
+                    const pelvis2D = { x: (lHip.x + rHip.x) / 2.0, y: (lHip.y + rHip.y) / 2.0 };
+                    const neck2D   = { x: (lShoulder.x + rShoulder.x) / 2.0, y: (lShoulder.y + rShoulder.y) / 2.0 };
+                    const head2D   = nose || { x: neck2D.x, y: neck2D.y - 30.0 };
 
-        // Step 3: Run 3D Lifter GCN
-        if (gcnSession) {
-            const tensorNodes = new ort.Tensor('float32', nodesData, [1, 17, 5]);
-            const tensorAdj = new ort.Tensor('float32', staticAdj, [1, 17, 17]);
-            
-            const gcnResults = await gcnSession.run({ input_nodes: tensorNodes, input_adj: tensorAdj });
-            const outputData = gcnResults.output_joints.data; // [1, 17, 4] -> X, Y, Z, Sigma_Z
-            
-            for (let i = 0; i < 17; i++) {
-                currentJoints3D[i].x = outputData[i * 4 + 0];
-                currentJoints3D[i].y = outputData[i * 4 + 1];
-                currentJoints3D[i].z = outputData[i * 4 + 2];
+                    // Track person position in screen normalized coordinates
+                    personCenterX = (pelvis2D.x) / MODEL_SIZE;
+                    personCenterY = (pelvis2D.y) / MODEL_SIZE;
+
+                    // Direct 2D-to-3D Kinematic Lifter (Full Body Live Motion: Arms, Legs, Knees, Torso, Head)
+                    const lift3D = (kp2D, parent2D, depthFactor = 0.0) => {
+                        if (!kp2D) return { x: 0, y: 0, z: 0 };
+                        // Mirror horizontal X coordinate for webcam mirror feed
+                        const x3d = -((kp2D.x - pelvis2D.x) / 120.0);
+                        const y3d = -((kp2D.y - pelvis2D.y) / 120.0); // 2D image Y (down) to 3D Y height
+                        
+                        // Estimate depth relative to torso scale
+                        const torsoLen = Math.hypot(neck2D.x - pelvis2D.x, neck2D.y - pelvis2D.y) || 100.0;
+                        const z3d = (depthFactor * (torsoLen / 100.0));
+                        
+                        return { x: x3d, y: y3d, z: z3d };
+                    };
+
+                    // 17 GCN Joint Order:
+                    // 0: Pelvis, 1: R_Hip, 2: R_Knee, 3: R_Ankle, 4: L_Hip, 5: L_Knee, 6: L_Ankle
+                    // 7: Spine1, 8: Spine2, 9: Neck, 10: Head, 11: L_Shoulder, 12: L_Elbow, 13: L_Wrist
+                    // 14: R_Shoulder, 15: R_Elbow, 16: R_Wrist
+
+                    currentJoints3D[0]  = { x: 0, y: 0, z: 0 }; // Pelvis Root
+                    currentJoints3D[1]  = lift3D(rHip, pelvis2D, 0.05);
+                    currentJoints3D[2]  = lift3D(rKnee, rHip, 0.1);
+                    currentJoints3D[3]  = lift3D(rAnkle, rKnee, 0.0);
+                    currentJoints3D[4]  = lift3D(lHip, pelvis2D, -0.05);
+                    currentJoints3D[5]  = lift3D(lKnee, lHip, 0.1);
+                    currentJoints3D[6]  = lift3D(lAnkle, lKnee, 0.0);
+
+                    const spine12D = { x: pelvis2D.x * 0.67 + neck2D.x * 0.33, y: pelvis2D.y * 0.67 + neck2D.y * 0.33 };
+                    const spine22D = { x: pelvis2D.x * 0.33 + neck2D.x * 0.67, y: pelvis2D.y * 0.33 + neck2D.y * 0.67 };
+
+                    currentJoints3D[7]  = lift3D(spine12D, pelvis2D, 0.02);
+                    currentJoints3D[8]  = lift3D(spine22D, pelvis2D, 0.04);
+                    currentJoints3D[9]  = lift3D(neck2D, pelvis2D, 0.05);
+                    currentJoints3D[10] = lift3D(head2D, neck2D, 0.08);
+
+                    currentJoints3D[11] = lift3D(lShoulder, neck2D, -0.05);
+                    currentJoints3D[12] = lift3D(lElbow, lShoulder, 0.15);
+                    currentJoints3D[13] = lift3D(lWrist, lElbow, 0.2);
+
+                    currentJoints3D[14] = lift3D(rShoulder, neck2D, 0.05);
+                    currentJoints3D[15] = lift3D(rElbow, rShoulder, 0.15);
+                    currentJoints3D[16] = lift3D(rWrist, rElbow, 0.2);
+                }
             }
         }
 
         const elapsed = (performance.now() - tStart).toFixed(1);
         if (performance.now() - lastLogTime > 2500) {
-            const statusStr = box2D ? `Person Detected (${(box2D.score*100).toFixed(0)}%)` : `Searching Person`;
-            logMsg(`[Pipeline Active] ${statusStr} | Latency: ${elapsed}ms | 3D Bounds Z:[${currentJoints3D[0].z.toFixed(2)}]`);
+            const statusStr = personFound ? `Full Body Target Tracked` : `Searching`;
+            const dx = (Math.max(...currentJoints3D.map(j => j.x)) - Math.min(...currentJoints3D.map(j => j.x))).toFixed(2);
+            const dy = (Math.max(...currentJoints3D.map(j => j.y)) - Math.min(...currentJoints3D.map(j => j.y))).toFixed(2);
+            const dz = (Math.max(...currentJoints3D.map(j => j.z)) - Math.min(...currentJoints3D.map(j => j.z))).toFixed(2);
+
+            logMsg(`[3D Kinetic Engine] ${statusStr} | Latency: ${elapsed}ms | Position: (${personCenterX.toFixed(2)}, ${personCenterY.toFixed(2)}) | 3D Span -> X:[${dx}m] Y:[${dy}m] Z:[${dz}m]`);
             lastLogTime = performance.now();
         }
 
@@ -300,17 +330,19 @@ function startRenderLoop() {
             lastTime = time;
         }
 
-        // Run End-to-End YOLO 2D + 3D GCN inference pipeline
-        if ((segmentSession || gcnSession) && !isInferringPipeline) {
+        // Run 2D Keypoint -> 3D Kinetic Lifter pipeline
+        if (poseSession && !isInferringPipeline) {
             runEndToEndPipeline(time);
         }
 
-        // Phase 4: Matrix Buffer Updates in 60 FPS render loop
-        const t = time * 0.002;
+        // Translate whole 3D skeleton avatar in Three.js world space following user across video screen
+        const worldX = -(personCenterX - 0.5) * 4.5; // Mirrored X translation across screen
+        const worldY = -(personCenterY - 0.5) * 3.5; // Y translation up/down screen
+
         for (let i = 0; i < jointCount; i++) {
-            const px = (currentJoints3D[i].x !== null && !isNaN(currentJoints3D[i].x)) ? currentJoints3D[i].x : Math.sin(t + i * 0.2) * 1.5;
-            const py = (currentJoints3D[i].y !== null && !isNaN(currentJoints3D[i].y)) ? currentJoints3D[i].y : Math.cos(t * 1.5 + i * 0.1) * 1.5;
-            const pz = (currentJoints3D[i].z !== null && !isNaN(currentJoints3D[i].z)) ? currentJoints3D[i].z : Math.sin(t * 0.5 + i * 0.3) * 0.5;
+            const px = currentJoints3D[i].x * 1.5 + worldX;
+            const py = currentJoints3D[i].y * 1.5 + worldY;
+            const pz = currentJoints3D[i].z * 1.5;
 
             dummy.position.set(px, py, pz);
             dummy.updateMatrix();
@@ -321,13 +353,14 @@ function startRenderLoop() {
         // Render 16 skeletal bone cylinders between connected joints
         for (let b = 0; b < bonePairs.length; b++) {
             const [i, j] = bonePairs[b];
-            const p1x = (currentJoints3D[i].x !== null && !isNaN(currentJoints3D[i].x)) ? currentJoints3D[i].x : Math.sin(t + i * 0.2) * 1.5;
-            const p1y = (currentJoints3D[i].y !== null && !isNaN(currentJoints3D[i].y)) ? currentJoints3D[i].y : Math.cos(t * 1.5 + i * 0.1) * 1.5;
-            const p1z = (currentJoints3D[i].z !== null && !isNaN(currentJoints3D[i].z)) ? currentJoints3D[i].z : Math.sin(t * 0.5 + i * 0.3) * 0.5;
 
-            const p2x = (currentJoints3D[j].x !== null && !isNaN(currentJoints3D[j].x)) ? currentJoints3D[j].x : Math.sin(t + j * 0.2) * 1.5;
-            const p2y = (currentJoints3D[j].y !== null && !isNaN(currentJoints3D[j].y)) ? currentJoints3D[j].y : Math.cos(t * 1.5 + j * 0.1) * 1.5;
-            const p2z = (currentJoints3D[j].z !== null && !isNaN(currentJoints3D[j].z)) ? currentJoints3D[j].z : Math.sin(t * 0.5 + j * 0.3) * 0.5;
+            const p1x = currentJoints3D[i].x * 1.5 + worldX;
+            const p1y = currentJoints3D[i].y * 1.5 + worldY;
+            const p1z = currentJoints3D[i].z * 1.5;
+
+            const p2x = currentJoints3D[j].x * 1.5 + worldX;
+            const p2y = currentJoints3D[j].y * 1.5 + worldY;
+            const p2z = currentJoints3D[j].z * 1.5;
 
             const p1 = new THREE.Vector3(p1x, p1y, p1z);
             const p2 = new THREE.Vector3(p2x, p2y, p2z);
