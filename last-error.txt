@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/Users/Guest/vision-track/backend/train_gcn.py", line 139, in <module>
+    train()
+    ~~~~~^^
+  File "/Users/Guest/vision-track/backend/train_gcn.py", line 110, in train
+    for batch_idx, (nodes, adj, target) in enumerate(dataloader):
+                                           ~~~~~~~~~^^^^^^^^^^^^
+  File "/Users/Guest/venv/lib/python3.14/site-packages/torch/utils/data/dataloader.py", line 725, in __next__
+    data = self._next_data()
+  File "/Users/Guest/venv/lib/python3.14/site-packages/torch/utils/data/dataloader.py", line 785, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+  File "/Users/Guest/venv/lib/python3.14/site-packages/torch/utils/data/_utils/fetch.py", line 54, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+            ~~~~~~~~~~~~^^^^^
+  File "/Users/Guest/vision-track/backend/dataset.py", line 94, in __getitem__
+    result = (nodes_tensor, adj_tensor, target_tensor)
+                                        ^^^^^^^^^^^^^
+NameError: name 'target_tensor' is not defined
+(venv) Guest@D1-12 backend % 

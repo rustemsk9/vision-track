@@ -15,6 +15,7 @@ class VisionTrackDataset(Dataset):
         self.samples = []
         self.transform = transform
         self.mat_extractor = MATExtractor(num_nodes=17)
+        self.cache = {}
         
         # Parse the dataset directory
         self._parse_directory()
@@ -45,6 +46,9 @@ class VisionTrackDataset(Dataset):
         return len(self.samples)
 
     def __getitem__(self, idx):
+        if idx in self.cache:
+            return self.cache[idx]
+
         sample = self.samples[idx]
         mask_path = sample['mask_path']
         joints_dict = sample['joints']
@@ -89,7 +93,14 @@ class VisionTrackDataset(Dataset):
                 
         target_tensor = torch.tensor(target_joints, dtype=torch.float32) # Shape: (17, 3)
         
-        return nodes_tensor, adj_tensor, target_tensor
+        # Sanitize any potential NaNs or Infs
+        nodes_tensor = torch.nan_to_num(nodes_tensor, nan=0.0)
+        adj_tensor = torch.nan_to_num(adj_tensor, nan=0.0)
+        target_tensor = torch.nan_to_num(target_tensor, nan=0.0)
+        
+        result = (nodes_tensor, adj_tensor, target_tensor)
+        self.cache[idx] = result
+        return result
 
 if __name__ == "__main__":
     # Test block

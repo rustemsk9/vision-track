@@ -51,11 +51,11 @@ class SemanticGCNLifter(nn.Module):
         
         # Layer 1: Input (5) -> Hidden
         self.gcn1 = SemanticGraphConv(in_channels, hidden_channels, num_nodes)
-        self.bn1 = nn.BatchNorm1d(num_nodes)
+        self.bn1 = nn.BatchNorm1d(hidden_channels)
         
         # Layer 2: Hidden -> Hidden
         self.gcn2 = SemanticGraphConv(hidden_channels, hidden_channels, num_nodes)
-        self.bn2 = nn.BatchNorm1d(num_nodes)
+        self.bn2 = nn.BatchNorm1d(hidden_channels)
         
         # Layer 3: Hidden -> Output (4 channels: X, Y, Z, Sigma_Z)
         self.gcn3 = SemanticGraphConv(hidden_channels, out_channels, num_nodes)

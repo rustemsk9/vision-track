@@ -63,9 +63,13 @@ async function initEngine() {
             ort.env.wasm.numThreads = 1;
             ort.env.wasm.simd = true;
             
-            // Note: These paths assume models are served from a static directory
-            segmentSession = await ort.InferenceSession.create('/static/models/yolo_segmentation.onnx', { executionProviders: ['webgl', 'wasm'] });
-            gcnSession = await ort.InferenceSession.create('/static/models/3d_lifter_gcn.onnx', { executionProviders: ['webgl', 'wasm'] });
+            // Load YOLOv11-nano for 3D Engine (with fallback to yolov8n.onnx)
+            try {
+                segmentSession = await ort.InferenceSession.create('/static/yolo11n.onnx', { executionProviders: ['wasm'] });
+            } catch (yoloErr) {
+                segmentSession = await ort.InferenceSession.create('/static/yolov8n.onnx', { executionProviders: ['wasm'] });
+            }
+            gcnSession = await ort.InferenceSession.create('/static/models/3d_lifter_gcn.onnx', { executionProviders: ['wasm'] });
             statusText.innerText = "Running 3D GCN Inference (Active)";
         } catch (modelErr) {
             console.warn("ONNX models not found or failed to load. Falling back to simulation mode.", modelErr);

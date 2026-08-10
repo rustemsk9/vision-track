@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import os
 
@@ -23,7 +24,8 @@ class NodeDLoss(nn.Module):
         target shape: (Batch, 17, 3) -> X, Y, Z
         """
         pred_xyz = pred[:, :, :3]
-        sigma_z = pred[:, :, 3]
+        # Softplus ensures sigma_z is strictly positive (> 0) preventing NaN in log
+        sigma_z = F.softplus(pred[:, :, 3]) + 1e-4
 
         # 1. MPJPE (Mean Per-Joint Position Error)
         loss_mpjpe = torch.norm(pred_xyz - target, p=2, dim=2).mean()
@@ -38,7 +40,7 @@ class NodeDLoss(nn.Module):
 
         # 3. Uncertainty NLL (Negative Log-Likelihood for Depth)
         z_diff_sq = (pred_xyz[:, :, 2] - target[:, :, 2]) ** 2
-        loss_nll = (z_diff_sq / (2 * (sigma_z ** 2) + 1e-6) + torch.log(sigma_z + 1e-6)).mean()
+        loss_nll = (z_diff_sq / (2 * (sigma_z ** 2)) + torch.log(sigma_z)).mean()
 
         # Combine all three terms
         total_loss = loss_mpjpe + (self.lambda_bone * loss_bone) + (self.lambda_nll * loss_nll)
@@ -50,7 +52,12 @@ def train():
     batch_size = 32
     epochs = 20
     learning_rate = 0.001
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
     
     print(f"Using device: {device}")
     
@@ -83,8 +90,8 @@ def train():
     # 17 nodes, 5 input channels, 128 hidden, 4 output channels
     model = SemanticGCNLifter(num_nodes=17, in_channels=5, hidden_channels=128, out_channels=4).to(device)
     
-    # XLA / Torch Compile optimization for local hardware throughput
-    if hasattr(torch, 'compile'):
+    # XLA / Torch Compile optimization for local hardware throughput (CUDA only)
+    if device.type == 'cuda' and hasattr(torch, 'compile'):
         try:
             print("Compiling model for optimized gradient calculations...")
             model = torch.compile(model)
@@ -112,6 +119,7 @@ def train():
             loss = criterion(predictions, target)
             
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             
             epoch_loss += loss.item()

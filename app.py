@@ -314,7 +314,13 @@ elif mode == "2D Webcam Edge AI (ONNX/WASM)":
 else:
     st.header("Advanced 3D WebGL Engine")
     st.markdown("This component runs the 3D Lifter GCN, WASM mathematical abstraction, and Three.js rendering completely within the browser.")
-    st.markdown("Ensure your exported ONNX models are located in `static/models/yolo_segmentation.onnx` and `static/models/3d_lifter_gcn.onnx` for the edge inference to work.")
+    # Auto-check and download YOLOv11-nano ONNX if missing
+    try:
+        from utils.ensure_yolo11n import ensure_yolo11n_onnx
+        ensure_yolo11n_onnx()
+    except Exception as e:
+        logging.error(f"Error ensuring yolo11n.onnx: {e}")
+
     try:
         with open("frontend/index.html", "r") as f:
             html_code = f.read()
