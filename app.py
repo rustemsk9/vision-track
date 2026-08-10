@@ -337,7 +337,7 @@ else:
         
         iframe_host = "localhost"
         st.markdown(
-            f'<iframe src="http://{iframe_host}:8080/static/engine3d.html" width="100%" height="650" allow="camera; microphone; display-capture" style="border:none; border-radius:8px;"></iframe>',
+            f'<iframe src="http://{iframe_host}:8080/static/engine3d.html" width="100%" height="550" allow="camera; microphone; display-capture" style="border:none; border-radius:8px;"></iframe>',
             unsafe_allow_html=True
         )
         st.info("💡 **Camera Access Tip:** Modern browsers block webcam access (`navigator.mediaDevices`) on insecure connections. To use this 3D feature, you must access the app via `http://localhost:8501` or a secure `https://` connection.")
