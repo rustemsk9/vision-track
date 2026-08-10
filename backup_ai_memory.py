@@ -1,5 +1,6 @@
 import os
 import glob
+import json
 
 def backup_ai_memory():
     # Find the Gemini brain directory
@@ -16,27 +17,29 @@ def backup_ai_memory():
         outfile.write("> **Instructions for Tomorrow:**\n")
         outfile.write("> Just tell the AI: *'Read the AI_MEMORY_BACKUP.md file in the project folder to restore your context, then let's continue with Phase 2.'*\n\n")
         
-        # Find the most recently active conversation folder
+        # 1. Find the most recent implementation plan to backup the artifacts
         all_plans = glob.glob(os.path.join(brain_dir, '*', 'implementation_plan.md'))
-        if not all_plans:
-            print("No AI artifacts found to backup.")
-            return
+        if all_plans:
+            active_plan = max(all_plans, key=os.path.getmtime)
+            active_plan_folder = os.path.dirname(active_plan)
             
-        active_plan = max(all_plans, key=os.path.getmtime)
-        active_brain_folder = os.path.dirname(active_plan)
-        
-        for artifact in artifacts:
-            filepath = os.path.join(active_brain_folder, artifact)
-            if os.path.exists(filepath):
-                outfile.write(f"## --- {artifact.upper()} ---\n\n")
-                with open(filepath, 'r') as infile:
-                    outfile.write(infile.read())
-                outfile.write("\n\n")
-                print(f"Successfully backed up: {artifact}")
-                
-    # --- EXTRACT CONVERSATION RESPONSES ---
-    import json
-    conversation_id = os.path.basename(active_brain_folder)
+            for artifact in artifacts:
+                filepath = os.path.join(active_plan_folder, artifact)
+                if os.path.exists(filepath):
+                    outfile.write(f"## --- {artifact.upper()} ---\n\n")
+                    with open(filepath, 'r') as infile:
+                        outfile.write(infile.read())
+                    outfile.write("\n\n")
+                    print(f"Successfully backed up: {artifact}")
+        else:
+            print("No implementation plans found to backup.")
+            
+    # 2. Find the most recent conversation transcript for AI responses
+    all_transcripts = glob.glob(os.path.join(brain_dir, '*', '.system_generated', 'logs', 'transcript.jsonl'))
+    if all_transcripts:
+        active_transcript = max(all_transcripts, key=os.path.getmtime)
+        active_transcript_folder = os.path.dirname(os.path.dirname(os.path.dirname(active_transcript)))
+        conversation_id = os.path.basename(active_transcript_folder)
     transcript_path = os.path.expanduser(f'~/.gemini/antigravity/brain/{conversation_id}/.system_generated/logs/transcript.jsonl')
     responses_file = os.path.expanduser('~/vision-track/conversation-responses.md')
     
