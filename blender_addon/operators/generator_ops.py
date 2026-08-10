@@ -12,7 +12,6 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
     bl_label = "Batch Generate Synthetic Data"
     bl_options = {'REGISTER', 'UNDO'}
 
-    # Use directory instead of file
     filepath: bpy.props.StringProperty(
         name="AMASS Folder",
         description="Path to the folder containing AMASS .npz files",
@@ -28,7 +27,6 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
 
     def execute(self, context):
         directory = self.filepath
-        # If user selected a file inside a folder, get the folder
         if not os.path.isdir(directory):
             directory = os.path.dirname(directory)
 
@@ -40,13 +38,11 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        # Setup Logger
         log_file = os.path.join(output_dir, "visiontrack_generator.log")
         logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', force=True)
         logger = logging.getLogger(__name__)
         logger.info(f"Starting Batch Generation from directory: {directory}")
 
-        # Dynamic Rig Detection
         smpl_rig = None
         for obj in bpy.context.scene.objects:
             if obj.type == 'ARMATURE' and 'Pelvis' in obj.pose.bones:
@@ -60,11 +56,8 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
             return {'CANCELLED'}
             
         logger.info(f"Found SMPL Rig: {smpl_rig.name}")
-        
-        # Setup Camera tracking the rig
         self.setup_imac_camera(smpl_rig)
             
-        # Detect Mesh (assuming it's a child of the rig or has 'Mesh' in name)
         smpl_mesh = None
         for obj in bpy.context.scene.objects:
             if obj.type == 'MESH' and (obj.parent == smpl_rig or "SMPL" in obj.name or "Mesh" in obj.name or obj.name.startswith("SMPL")):
@@ -78,7 +71,6 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
             logger.info(f"Found SMPL Mesh: {smpl_mesh.name}")
             self.apply_zero_raytracing_masking(smpl_mesh)
             
-        # Find all .npz files recursively
         npz_files = []
         for root, dirs, files in os.walk(directory):
             for f in files:
@@ -93,34 +85,24 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
 
         logger.info(f"Found {len(npz_files)} .npz files for batch processing.")
         
-        # Setup render settings once
         bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'
-        
-        # 1. Disable AgX/Filmic Color Management (This is what makes pure white look gray!)
         bpy.context.scene.view_settings.view_transform = 'Raw'
-        
-        # 2. Force Pure White Silhouette
         bpy.context.scene.display.shading.light = 'FLAT'
         bpy.context.scene.display.shading.color_type = 'SINGLE'
         bpy.context.scene.display.shading.single_color = (1.0, 1.0, 1.0)
-        
-        # 3. Force Pure Black Background
         bpy.context.scene.display.shading.background_type = 'VIEWPORT'
         bpy.context.scene.display.shading.background_color = (0.0, 0.0, 0.0)
         
-        # Optimized BW Export
         bpy.context.scene.render.image_settings.color_mode = 'BW'
         bpy.context.scene.render.image_settings.compression = 100
         bpy.context.scene.render.resolution_x = 640
         bpy.context.scene.render.resolution_y = 480
         bpy.context.scene.render.resolution_percentage = 100
 
-        # Batch Processing Loop
         used_names = set()
         for filepath in npz_files:
             base_name = os.path.splitext(os.path.basename(filepath))[0]
             
-            # Ensure unique output directory name
             unique_name = base_name
             index = 1
             while unique_name in used_names or os.path.exists(os.path.join(output_dir, unique_name)):
@@ -132,32 +114,25 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
             
             logger.info(f"Processing sequence: {unique_name} (from {filepath})")
             
-            # 1. Real-world Camera Angle & Coordinate Fix
-            # Camera placed at 3.5m distance to fit full legs, chest/eye height
             cam_obj = bpy.data.objects["iMacCamera"]
             cam_obj.location = (0, -3.5, 1.2)
             cam_obj.rotation_euler = (math.radians(90), 0, 0)
             
-            # AMASS motion capture data is natively Y-up. Blender is Z-up. 
-            # We must explicitly rotate the entire rig 90 degrees on the X-axis 
-            # and 180 degrees on the Y-axis so the human stands upright and right-side up!
             smpl_rig.rotation_mode = 'XYZ'
             smpl_rig.rotation_euler = (math.radians(90), math.radians(180), 0)
             
             logger.info("Camera and Rig coordinates locked for standard Z-up front-facing posture")
             
-            # 2. Load AMASS Data and Keyframe
             num_frames = self.load_amass_data(smpl_rig, filepath)
             
-            # 3. Export full animation sequence
+            # Export animation sequence (frame_step=10 to subsample MoCap frames)
             frames_to_render = num_frames
-            self.export_training_data(seq_output_dir, 1, frames_to_render, smpl_rig)
+            self.export_training_data(seq_output_dir, 1, frames_to_render, smpl_rig, frame_step=10)
             logger.info(f"Finished exporting {frames_to_render} frames for {base_name}")
             
         self.report({'INFO'}, f"Batch Generation Complete! Check {output_dir}")
         logger.info("Batch Generation Complete!")
         
-        # Clean up handlers
         logging.shutdown()
         return {'FINISHED'}
 
@@ -170,20 +145,15 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
             bpy.context.collection.objects.link(cam_obj)
         
         cam_obj.data.lens = 28 
-        # Set height to 1.2m, aiming directly down the Y axis
         cam_obj.location = (0, -2.5, 1.2)
         cam_obj.rotation_euler = (math.radians(90), 0, 0)
         bpy.context.scene.camera = cam_obj
         
         if target_rig:
-            # Clear existing constraints
             cam_obj.constraints.clear()
-            
-            # Add Track To constraint to always center the human
             track_const = cam_obj.constraints.new(type='TRACK_TO')
             track_const.target = target_rig
             
-            # Target the Spine or Pelvis to keep the upper body centered
             if 'Spine1' in target_rig.pose.bones:
                 track_const.subtarget = 'Spine1'
             elif 'Pelvis' in target_rig.pose.bones:
@@ -193,7 +163,7 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
             track_const.up_axis = 'UP_Y'
 
     def load_amass_data(self, rig, filepath):
-        """Loads AMASS .npz file and keyframes the rig"""
+        """Loads AMASS .npz file and keyframes all pose bone rotations (Upper & Lower Body)"""
         import numpy as np
         import mathutils
         
@@ -203,6 +173,7 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
         
         num_frames = poses.shape[0]
         
+        # SMPL 24 Joint Hierarchy
         joint_names = [
             'Pelvis', 'L_Hip', 'R_Hip', 'Spine1', 'L_Knee', 'R_Knee', 'Spine2', 
             'L_Ankle', 'R_Ankle', 'Spine3', 'L_Foot', 'R_Foot', 'Neck', 'L_Collar', 
@@ -259,33 +230,25 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
             node_input = node_group.nodes.new('NodeGroupInput')
             node_output = node_group.nodes.new('NodeGroupOutput')
             if hasattr(node_group, "interface"):
-                # Blender 4.0+ API
                 node_group.interface.new_socket(name="Geometry", in_out='OUTPUT', socket_type='NodeSocketGeometry')
                 node_group.interface.new_socket(name="Geometry", in_out='INPUT', socket_type='NodeSocketGeometry')
             else:
-                # Blender 3.x API
                 node_group.outputs.new('NodeSocketGeometry', "Geometry")
                 node_group.inputs.new('NodeSocketGeometry', "Geometry")
                 
             node_group.links.new(node_input.outputs[0], node_output.inputs[0])
 
-    def export_training_data(self, output_dir, frame_start, frame_end, smpl_obj):
+    def export_training_data(self, output_dir, frame_start, frame_end, smpl_obj, frame_step=1):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
             
         joint_data = []
-        
-        # Subsample frames to prevent thousands of repeating, identical postures 
-        # (MoCap is often 60-120fps, so we skip every 10 frames to capture variance)
-        frame_step = 10 
         
         for f in range(frame_start, frame_end + 1, frame_step):
             bpy.context.scene.frame_set(f)
             filepath = os.path.join(output_dir, f"mask_{f:04d}.png")
             bpy.context.scene.render.filepath = filepath
             
-            # Use proper render() instead of opengl() so we don't capture 
-            # viewport overlays, grids, or the camera object in the mask!
             bpy.ops.render.render(write_still=True)
             
             frame_joints = {}

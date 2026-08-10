@@ -9,7 +9,7 @@
         #container { position: relative; width: 640px; height: 480px; margin: 0 auto; top: 10px; }
         video { position: absolute; top: 0; left: 0; width: 640px; height: 480px; object-fit: cover; z-index: 1; transform: scaleX(-1); border-radius: 8px; }
         canvas { position: absolute; top: 0; left: 0; width: 640px; height: 480px; z-index: 2; pointer-events: none; border-radius: 8px; }
-        #status { position: absolute; top: 10px; left: 10px; z-index: 3; background: rgba(0,0,0,0.75); padding: 8px 12px; border-radius: 6px; font-weight: bold; }
+        #status { position: absolute; top: 10px; left: 10px; z-index: 3; background: rgba(0,0,0,0.85); padding: 8px 12px; border-radius: 6px; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); }
         #log-panel { position: absolute; bottom: 10px; left: 10px; z-index: 10; background: rgba(0,0,0,0.85); color: #00ff88; font-family: monospace; font-size: 11px; padding: 8px 10px; border-radius: 6px; width: 420px; max-height: 130px; overflow-y: auto; border: 1px solid rgba(0,255,136,0.3); pointer-events: auto; }
     </style>
 </head>
@@ -19,7 +19,11 @@
         <div id="status">
             <div><strong>Status:</strong> <span id="status-text">Initializing...</span></div>
             <div><strong>FPS:</strong> <span id="fps">0</span></div>
-            <div><strong>Engine:</strong> Three.js Instanced + WebGL</div>
+            <div><strong>Active Mode:</strong> <span id="mode-badge" style="color:#00ff88;">3D Kinematic Engine</span></div>
+            <div style="margin-top: 6px; display: flex; gap: 4px; pointer-events: auto;">
+                <button onclick="setEngineMode('kinematic')" style="background:#004422; border:1px solid #00ff88; color:#fff; font-size:10px; border-radius:4px; padding:3px 6px; cursor:pointer;">3D Kinematic</button>
+                <button onclick="setEngineMode('gcn_onnx')" style="background:#443300; border:1px solid #ffbb00; color:#fff; font-size:10px; border-radius:4px; padding:3px 6px; cursor:pointer;">3D GCN (ONNX)</button>
+            </div>
         </div>
         <div id="log-panel">
             <div style="font-weight: bold; color: #fff; margin-bottom: 4px; display: flex; justify-space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 2px;">

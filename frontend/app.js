@@ -1,4 +1,4 @@
-// Phase 3 & 4: Web Architecture, 2D YOLO Pose Keypoints & 3D Kinetic Lifter Engine
+// Phase 3 & 4: Web Architecture, 2D YOLO Pose Keypoints & Dual Engine (ONNX GCN / 3D Kinematic)
 
 const video = document.getElementById('webcam');
 const statusText = document.getElementById('status-text');
@@ -12,6 +12,19 @@ function logMsg(msg, level = 'info') {
         const color = level === 'error' ? '#ff4444' : (level === 'warn' ? '#ffbb00' : '#00ff88');
         logDiv.innerHTML += `<div style="color: ${color}; margin-bottom: 2px;">[${time}] ${msg}</div>`;
         logDiv.parentElement.scrollTop = logDiv.parentElement.scrollHeight;
+    }
+}
+
+// Global Engine Selector: 'kinematic' or 'gcn_onnx'
+let activeEngineMode = 'kinematic';
+
+function setEngineMode(mode) {
+    activeEngineMode = mode;
+    logMsg(`Switched 3D Engine Mode to: ${mode === 'gcn_onnx' ? '3D Lifter GCN (ONNX)' : '3D Kinematic Engine'}`);
+    const modeBadge = document.getElementById('mode-badge');
+    if (modeBadge) {
+        modeBadge.innerText = mode === 'gcn_onnx' ? '3D Lifter GCN (ONNX)' : '3D Kinematic Engine';
+        modeBadge.style.color = mode === 'gcn_onnx' ? '#ffbb00' : '#00ff88';
     }
 }
 
@@ -109,6 +122,14 @@ let personCenterY = 0.5;
 let currentJoints3D = new Array(17).fill(0).map(() => ({ x: 0, y: 0, z: 0 }));
 let keypoints2D = new Array(17).fill(0).map(() => ({ x: null, y: null, conf: 0 }));
 
+// Static Adjacency matrix for 17 GCN nodes
+const staticAdj = new Float32Array(17 * 17);
+for (let i = 0; i < 17; i++) staticAdj[i * 17 + i] = 1.0;
+for (const [i, j] of bonePairs) {
+    staticAdj[i * 17 + j] = 1.0;
+    staticAdj[j * 17 + i] = 1.0;
+}
+
 async function initEngine() {
     logMsg("Initializing 3D Web Engine & Diagnostic Logger...");
     try {
@@ -123,7 +144,6 @@ async function initEngine() {
         try {
             ort.env.wasm.numThreads = 1;
             ort.env.wasm.simd = true;
-            
             const providers = ['webgl', 'wasm'];
 
             logMsg("Loading 2D Pose Model (/static/yolov8n-pose.onnx)...");
@@ -136,10 +156,18 @@ async function initEngine() {
                 logMsg("Successfully loaded YOLOv8-Pose (WASM)!");
             }
 
+            logMsg("Loading 3D Lifter GCN (/static/models/3d_lifter_gcn.onnx)...");
+            try {
+                gcnSession = await ort.InferenceSession.create('/static/models/3d_lifter_gcn.onnx', { executionProviders: ['wasm'] });
+                logMsg("Successfully loaded 3D Lifter GCN ONNX Model!");
+            } catch (gcnErr) {
+                logMsg("Could not load 3d_lifter_gcn.onnx: " + gcnErr.message, "warn");
+            }
+
             statusText.innerText = "Running 3D Pose Inference (Active)";
         } catch (modelErr) {
             logMsg("Failed to load ONNX models: " + modelErr.message, "error");
-            statusText.innerText = "Running 3D GCN Inference (Kinetic Preview)";
+            statusText.innerText = "Running 3D Inference Preview";
         }
         
         startRenderLoop();
@@ -158,16 +186,14 @@ async function runEndToEndPipeline(time) {
     try {
         let personFound = false;
 
-        // Step 1: Run 2D YOLO Pose Keypoint Extraction
         if (poseSession) {
             const inputTensor = preprocessVideoFrame();
             const feeds = {};
             feeds[poseSession.inputNames[0]] = inputTensor;
             const poseResults = await poseSession.run(feeds);
-            const output = poseResults[poseSession.outputNames[0]].data; // [1, 56, 8400]
+            const output = poseResults[poseSession.outputNames[0]].data;
             const numChannels = Math.floor(output.length / 8400);
 
-            // Select CLOSEST person in front of iMac (Largest Bounding Box Area w * h)
             let maxArea = 0;
             let bestIdx = -1;
 
@@ -207,64 +233,109 @@ async function runEndToEndPipeline(time) {
                     const neck2D   = { x: (lShoulder.x + rShoulder.x) / 2.0, y: (lShoulder.y + rShoulder.y) / 2.0 };
                     const head2D   = nose || { x: neck2D.x, y: neck2D.y - 30.0 };
 
-                    // Track person position in screen normalized coordinates
                     personCenterX = (pelvis2D.x) / MODEL_SIZE;
                     personCenterY = (pelvis2D.y) / MODEL_SIZE;
 
-                    // Direct 2D-to-3D Kinematic Lifter (Full Body Live Motion: Arms, Legs, Knees, Torso, Head)
-                    const lift3D = (kp2D, parent2D, depthFactor = 0.0) => {
-                        if (!kp2D) return { x: 0, y: 0, z: 0 };
-                        // Mirror horizontal X coordinate for webcam mirror feed
-                        const x3d = -((kp2D.x - pelvis2D.x) / 120.0);
-                        const y3d = -((kp2D.y - pelvis2D.y) / 120.0); // 2D image Y (down) to 3D Y height
-                        
-                        // Estimate depth relative to torso scale
-                        const torsoLen = Math.hypot(neck2D.x - pelvis2D.x, neck2D.y - pelvis2D.y) || 100.0;
-                        const z3d = (depthFactor * (torsoLen / 100.0));
-                        
-                        return { x: x3d, y: y3d, z: z3d };
-                    };
+                    if (activeEngineMode === 'gcn_onnx' && gcnSession) {
+                        // MODE B: Run 3D Lifter GCN ONNX Model (3d_lifter_gcn.onnx)
+                        const rawCOCO = [];
+                        for (let c = 0; c < 17; c++) rawCOCO.push(getCOCO(c));
+                        const minX = Math.min(...rawCOCO.map(k => k.x));
+                        const maxX = Math.max(...rawCOCO.map(k => k.x));
+                        const minY = Math.min(...rawCOCO.map(k => k.y));
+                        const maxY = Math.max(...rawCOCO.map(k => k.y));
+                        const bw = Math.max(20, maxX - minX);
+                        const bh = Math.max(20, maxY - minY);
 
-                    // 17 GCN Joint Order:
-                    // 0: Pelvis, 1: R_Hip, 2: R_Knee, 3: R_Ankle, 4: L_Hip, 5: L_Knee, 6: L_Ankle
-                    // 7: Spine1, 8: Spine2, 9: Neck, 10: Head, 11: L_Shoulder, 12: L_Elbow, 13: L_Wrist
-                    // 14: R_Shoulder, 15: R_Elbow, 16: R_Wrist
+                        const getNormKP = (kp) => ({
+                            x: Math.max(0, Math.min(256, ((kp.x - minX) / bw) * 256.0)),
+                            y: Math.max(0, Math.min(256, ((kp.y - minY) / bh) * 256.0)),
+                            conf: kp.conf
+                        });
 
-                    currentJoints3D[0]  = { x: 0, y: 0, z: 0 }; // Pelvis Root
-                    currentJoints3D[1]  = lift3D(rHip, pelvis2D, 0.05);
-                    currentJoints3D[2]  = lift3D(rKnee, rHip, 0.1);
-                    currentJoints3D[3]  = lift3D(rAnkle, rKnee, 0.0);
-                    currentJoints3D[4]  = lift3D(lHip, pelvis2D, -0.05);
-                    currentJoints3D[5]  = lift3D(lKnee, lHip, 0.1);
-                    currentJoints3D[6]  = lift3D(lAnkle, lKnee, 0.0);
+                        const gcnNodes = [
+                            { x: pelvis2D.x, y: pelvis2D.y, conf: (lHip.conf + rHip.conf)/2 },
+                            getNormKP(rHip), getNormKP(rKnee), getNormKP(rAnkle),
+                            getNormKP(lHip), getNormKP(lKnee), getNormKP(lAnkle),
+                            { x: (pelvis2D.x * 0.67 + neck2D.x * 0.33), y: (pelvis2D.y * 0.67 + neck2D.y * 0.33), conf: 0.9 },
+                            { x: (pelvis2D.x * 0.33 + neck2D.x * 0.67), y: (pelvis2D.y * 0.33 + neck2D.y * 0.67), conf: 0.9 },
+                            getNormKP(neck2D), getNormKP(head2D),
+                            getNormKP(lShoulder), getNormKP(lElbow), getNormKP(lWrist),
+                            getNormKP(rShoulder), getNormKP(rElbow), getNormKP(rWrist)
+                        ];
 
-                    const spine12D = { x: pelvis2D.x * 0.67 + neck2D.x * 0.33, y: pelvis2D.y * 0.67 + neck2D.y * 0.33 };
-                    const spine22D = { x: pelvis2D.x * 0.33 + neck2D.x * 0.67, y: pelvis2D.y * 0.33 + neck2D.y * 0.67 };
+                        const nodesData = new Float32Array(17 * 5);
+                        for (let i = 0; i < 17; i++) {
+                            nodesData[i * 5 + 0] = gcnNodes[i].y;
+                            nodesData[i * 5 + 1] = 256.0 - gcnNodes[i].x;
+                            nodesData[i * 5 + 2] = 10.0;
+                            nodesData[i * 5 + 3] = 10.0;
+                            nodesData[i * 5 + 4] = gcnNodes[i].conf || 1.0;
+                        }
 
-                    currentJoints3D[7]  = lift3D(spine12D, pelvis2D, 0.02);
-                    currentJoints3D[8]  = lift3D(spine22D, pelvis2D, 0.04);
-                    currentJoints3D[9]  = lift3D(neck2D, pelvis2D, 0.05);
-                    currentJoints3D[10] = lift3D(head2D, neck2D, 0.08);
+                        const tensorNodes = new ort.Tensor('float32', nodesData, [1, 17, 5]);
+                        const tensorAdj = new ort.Tensor('float32', staticAdj, [1, 17, 17]);
+                        const gcnResults = await gcnSession.run({ input_nodes: tensorNodes, input_adj: tensorAdj });
+                        const outputData = gcnResults.output_joints.data;
 
-                    currentJoints3D[11] = lift3D(lShoulder, neck2D, -0.05);
-                    currentJoints3D[12] = lift3D(lElbow, lShoulder, 0.15);
-                    currentJoints3D[13] = lift3D(lWrist, lElbow, 0.2);
+                        const rootX = outputData[0 * 4 + 0];
+                        const rootY = outputData[0 * 4 + 1];
+                        const rootZ = outputData[0 * 4 + 2];
 
-                    currentJoints3D[14] = lift3D(rShoulder, neck2D, 0.05);
-                    currentJoints3D[15] = lift3D(rElbow, rShoulder, 0.15);
-                    currentJoints3D[16] = lift3D(rWrist, rElbow, 0.2);
+                        for (let i = 0; i < 17; i++) {
+                            currentJoints3D[i].x = outputData[i * 4 + 0] - rootX;
+                            currentJoints3D[i].y = outputData[i * 4 + 2] - rootZ; // Z height to Y
+                            currentJoints3D[i].z = outputData[i * 4 + 1] - rootY; // Y depth to Z
+                        }
+
+                    } else {
+                        // MODE A: Direct 2D-to-3D Kinematic Pose Engine
+                        const lift3D = (kp2D, parent2D, depthFactor = 0.0) => {
+                            if (!kp2D) return { x: 0, y: 0, z: 0 };
+                            const x3d = -((kp2D.x - pelvis2D.x) / 120.0);
+                            const y3d = -((kp2D.y - pelvis2D.y) / 120.0);
+                            const torsoLen = Math.hypot(neck2D.x - pelvis2D.x, neck2D.y - pelvis2D.y) || 100.0;
+                            const z3d = (depthFactor * (torsoLen / 100.0));
+                            return { x: x3d, y: y3d, z: z3d };
+                        };
+
+                        currentJoints3D[0]  = { x: 0, y: 0, z: 0 };
+                        currentJoints3D[1]  = lift3D(rHip, pelvis2D, 0.05);
+                        currentJoints3D[2]  = lift3D(rKnee, rHip, 0.1);
+                        currentJoints3D[3]  = lift3D(rAnkle, rKnee, 0.0);
+                        currentJoints3D[4]  = lift3D(lHip, pelvis2D, -0.05);
+                        currentJoints3D[5]  = lift3D(lKnee, lHip, 0.1);
+                        currentJoints3D[6]  = lift3D(lAnkle, lKnee, 0.0);
+
+                        const spine12D = { x: pelvis2D.x * 0.67 + neck2D.x * 0.33, y: pelvis2D.y * 0.67 + neck2D.y * 0.33 };
+                        const spine22D = { x: pelvis2D.x * 0.33 + neck2D.x * 0.67, y: pelvis2D.y * 0.33 + neck2D.y * 0.67 };
+
+                        currentJoints3D[7]  = lift3D(spine12D, pelvis2D, 0.02);
+                        currentJoints3D[8]  = lift3D(spine22D, pelvis2D, 0.04);
+                        currentJoints3D[9]  = lift3D(neck2D, pelvis2D, 0.05);
+                        currentJoints3D[10] = lift3D(head2D, neck2D, 0.08);
+
+                        currentJoints3D[11] = lift3D(lShoulder, neck2D, -0.05);
+                        currentJoints3D[12] = lift3D(lElbow, lShoulder, 0.15);
+                        currentJoints3D[13] = lift3D(lWrist, lElbow, 0.2);
+
+                        currentJoints3D[14] = lift3D(rShoulder, neck2D, 0.05);
+                        currentJoints3D[15] = lift3D(rElbow, rShoulder, 0.15);
+                        currentJoints3D[16] = lift3D(rWrist, rElbow, 0.2);
+                    }
                 }
             }
         }
 
         const elapsed = (performance.now() - tStart).toFixed(1);
         if (performance.now() - lastLogTime > 2500) {
-            const statusStr = personFound ? `Full Body Target Tracked` : `Searching`;
+            const modeName = activeEngineMode === 'gcn_onnx' ? '3D Lifter GCN (ONNX)' : '3D Kinematic Engine';
+            const statusStr = personFound ? `Target Tracked (${modeName})` : `Searching`;
             const dx = (Math.max(...currentJoints3D.map(j => j.x)) - Math.min(...currentJoints3D.map(j => j.x))).toFixed(2);
             const dy = (Math.max(...currentJoints3D.map(j => j.y)) - Math.min(...currentJoints3D.map(j => j.y))).toFixed(2);
             const dz = (Math.max(...currentJoints3D.map(j => j.z)) - Math.min(...currentJoints3D.map(j => j.z))).toFixed(2);
 
-            logMsg(`[3D Kinetic Engine] ${statusStr} | Latency: ${elapsed}ms | Position: (${personCenterX.toFixed(2)}, ${personCenterY.toFixed(2)}) | 3D Span -> X:[${dx}m] Y:[${dy}m] Z:[${dz}m]`);
+            logMsg(`[3D Engine] ${statusStr} | Latency: ${elapsed}ms | Position: (${personCenterX.toFixed(2)}, ${personCenterY.toFixed(2)}) | 3D Span -> X:[${dx}m] Y:[${dy}m] Z:[${dz}m]`);
             lastLogTime = performance.now();
         }
 
@@ -286,7 +357,6 @@ function startRenderLoop() {
     function animate(time) {
         requestAnimationFrame(animate);
         
-        // Calculate FPS
         frames++;
         if (time - lastTime >= 1000) {
             fpsText.innerText = frames;
@@ -294,14 +364,12 @@ function startRenderLoop() {
             lastTime = time;
         }
 
-        // Run 2D Keypoint -> 3D Kinetic Lifter pipeline
         if (poseSession && !isInferringPipeline) {
             runEndToEndPipeline(time);
         }
 
-        // Translate whole 3D skeleton avatar in Three.js world space following user across video screen
-        const worldX = -(personCenterX - 0.5) * 4.5; // Mirrored X translation across screen
-        const worldY = -(personCenterY - 0.5) * 3.5; // Y translation up/down screen
+        const worldX = -(personCenterX - 0.5) * 4.5;
+        const worldY = -(personCenterY - 0.5) * 3.5;
 
         for (let i = 0; i < jointCount; i++) {
             const px = currentJoints3D[i].x * 1.5 + worldX;
@@ -314,7 +382,6 @@ function startRenderLoop() {
         }
         instancedMesh.instanceMatrix.needsUpdate = true;
 
-        // Render 16 skeletal bone cylinders between connected joints
         for (let b = 0; b < bonePairs.length; b++) {
             const [i, j] = bonePairs[b];
 
@@ -346,12 +413,10 @@ function startRenderLoop() {
     requestAnimationFrame(animate);
 }
 
-// Maintain 640x480 viewport aspect ratio
 window.addEventListener('resize', () => {
     camera.aspect = 640 / 480;
     camera.updateProjectionMatrix();
     renderer.setSize(640, 480);
 });
 
-// Start the engine
 initEngine();
