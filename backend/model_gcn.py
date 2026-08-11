@@ -20,7 +20,7 @@ class SemanticGraphConv(nn.Module):
     def reset_parameters(self):
         nn.init.xavier_uniform_(self.weight)
         nn.init.zeros_(self.bias)
-        nn.init.constant_(self.M, 1e-4) # Initialize near zero
+        nn.init.constant_(self.M, 1.0) # Initialize to 1.0 for standard GCN flow
 
     def forward(self, x, adj):
         """
@@ -28,11 +28,17 @@ class SemanticGraphConv(nn.Module):
         adj: Static Adjacency Matrix (Batch, Num_Nodes, Num_Nodes)
         """
         # Create self-loops: A + I
-        I = torch.eye(adj.size(1)).to(adj.device).unsqueeze(0)
+        I = torch.eye(adj.size(1), device=adj.device).unsqueeze(0)
         A_hat = adj + I
+
+        # Symmetric degree normalization: D^(-1/2) * A_hat * D^(-1/2)
+        deg = torch.sum(A_hat, dim=-1)
+        deg_inv_sqrt = torch.pow(deg + 1e-5, -0.5)
+        D_inv_sqrt = I * deg_inv_sqrt.unsqueeze(-1) # ONNX-compatible diagonal matrix
+        norm_adj = torch.matmul(torch.matmul(D_inv_sqrt, A_hat), D_inv_sqrt)
         
         # Apply the semantic learnable mask (element-wise multiplication)
-        semantic_adj = A_hat * self.M
+        semantic_adj = norm_adj * self.M
         
         # H * W
         support = torch.matmul(x, self.weight)
@@ -44,9 +50,9 @@ class SemanticGraphConv(nn.Module):
 
 class SemanticGCNLifter(nn.Module):
     """
-    Node D: The 3-Layer 3D Lifter Network
+    Node D: The 3-Layer 3D Lifter Network (Direct 3D Spatial Coordinate Regression: X, Y, Z)
     """
-    def __init__(self, num_nodes=17, in_channels=5, hidden_channels=128, out_channels=4):
+    def __init__(self, num_nodes=17, in_channels=5, hidden_channels=128, out_channels=3):
         super(SemanticGCNLifter, self).__init__()
         
         # Layer 1: Input (5) -> Hidden
@@ -57,7 +63,7 @@ class SemanticGCNLifter(nn.Module):
         self.gcn2 = SemanticGraphConv(hidden_channels, hidden_channels, num_nodes)
         self.bn2 = nn.BatchNorm1d(hidden_channels)
         
-        # Layer 3: Hidden -> Output (4 channels: X, Y, Z, Sigma_Z)
+        # Layer 3: Hidden -> Output (3 channels: X, Y, Z)
         self.gcn3 = SemanticGraphConv(hidden_channels, out_channels, num_nodes)
         
         self.dropout = nn.Dropout(p=0.25)

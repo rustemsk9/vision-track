@@ -4,7 +4,7 @@ from model_gcn import SemanticGCNLifter
 
 def export_to_onnx():
     # 1. Initialize model and load weights
-    model = SemanticGCNLifter(num_nodes=17, in_channels=5, hidden_channels=128, out_channels=4)
+    model = SemanticGCNLifter(num_nodes=17, in_channels=5, hidden_channels=128, out_channels=3)
     weights_path = "3d_lifter_gcn_pro.pth"
     
     if os.path.exists(weights_path):
@@ -16,10 +16,22 @@ def export_to_onnx():
     model.eval()
     
     # 2. Create dummy inputs matching the expected shape
-    # Batch size 1, 17 nodes, 5 channels (X, Y, scale, Laplacian radius, visibility)
+    # Batch size 1, 17 nodes, 5 channels (y, 256-x, scale, Laplacian radius, visibility)
     dummy_nodes = torch.randn(1, 17, 5, dtype=torch.float32)
-    # Batch size 1, 17x17 Adjacency matrix
-    dummy_adj = torch.ones(1, 17, 17, dtype=torch.float32)
+    
+    # Batch size 1, 17x17 Anatomical Adjacency matrix (matching STATIC_ADJ in dataset.py)
+    bone_pairs = [
+        (0,1), (1,2), (2,3),     # Right Leg
+        (0,4), (4,5), (5,6),     # Left Leg
+        (0,7), (7,8), (8,9),     # Spine
+        (9,10),                  # Neck to Head
+        (9,11), (11,12), (12,13),# Left Arm
+        (9,14), (14,15), (15,16) # Right Arm
+    ]
+    dummy_adj = torch.eye(17, dtype=torch.float32).unsqueeze(0)
+    for i, j in bone_pairs:
+        dummy_adj[0, i, j] = 1.0
+        dummy_adj[0, j, i] = 1.0
     
     # 3. Export configuration
     output_path = os.path.abspath("../static/models/3d_lifter_gcn.onnx")

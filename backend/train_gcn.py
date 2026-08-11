@@ -8,43 +8,42 @@ import os
 from dataset import VisionTrackDataset
 from model_gcn import SemanticGCNLifter
 
-class NodeDLoss(nn.Module):
+class DirectPose3DLoss(nn.Module):
     """
-    The Trinity of Losses for 3D Pose Estimation
+    Stable 3D Keypoint & Kinematic Bone Consistency Loss (No NLL/Variance)
     """
-    def __init__(self, bone_pairs, lambda_bone=0.1, lambda_nll=0.01):
-        super(NodeDLoss, self).__init__()
+    def __init__(self, bone_pairs, lambda_bone=0.2):
+        super(DirectPose3DLoss, self).__init__()
         self.bone_pairs = bone_pairs
         self.lambda_bone = lambda_bone
-        self.lambda_nll = lambda_nll
+        if bone_pairs:
+            self.register_buffer('start_idx', torch.tensor([p[0] for p in bone_pairs], dtype=torch.long))
+            self.register_buffer('end_idx', torch.tensor([p[1] for p in bone_pairs], dtype=torch.long))
 
-    def forward(self, pred, target):
+    def forward(self, pred_xyz, target_xyz):
         """
-        pred shape: (Batch, 17, 4) -> X, Y, Z, Sigma_Z
-        target shape: (Batch, 17, 3) -> X, Y, Z
+        pred_xyz shape:   (Batch, 17, 3) -> X, Y, Z
+        target_xyz shape: (Batch, 17, 3) -> X, Y, Z
         """
-        pred_xyz = pred[:, :, :3]
-        # Softplus ensures sigma_z is strictly positive (> 0) preventing NaN in log
-        sigma_z = F.softplus(pred[:, :, 3]) + 1e-4
+        pred_xyz = pred_xyz.contiguous()
+        target_xyz = target_xyz.contiguous()
 
-        # 1. MPJPE (Mean Per-Joint Position Error)
-        loss_mpjpe = torch.norm(pred_xyz - target, p=2, dim=2).mean()
+        # 1. MPJPE - Smooth L1 (Huber) for robust keypoint regression
+        loss_mpjpe = F.smooth_l1_loss(pred_xyz, target_xyz)
 
-        # 2. Kinematic Bone-Length Consistency 
-        loss_bone = 0.0
+        # 2. Kinematic Bone-Length Consistency
+        loss_bone = torch.tensor(0.0, device=pred_xyz.device)
         if self.bone_pairs:
-            for (i, j) in self.bone_pairs:
-                pred_bone_len = torch.norm(pred_xyz[:, i, :] - pred_xyz[:, j, :], p=2, dim=1)
-                target_bone_len = torch.norm(target[:, i, :] - target[:, j, :], p=2, dim=1)
-                loss_bone += torch.abs(pred_bone_len - target_bone_len).mean()
+            pred_bones = pred_xyz[:, self.start_idx, :] - pred_xyz[:, self.end_idx, :]
+            target_bones = target_xyz[:, self.start_idx, :] - target_xyz[:, self.end_idx, :]
+            
+            pred_lens = torch.sqrt(torch.sum(pred_bones ** 2, dim=-1) + 1e-8)
+            target_lens = torch.sqrt(torch.sum(target_bones ** 2, dim=-1) + 1e-8)
+            loss_bone = F.l1_loss(pred_lens, target_lens)
 
-        # 3. Uncertainty NLL (Negative Log-Likelihood for Depth)
-        z_diff_sq = (pred_xyz[:, :, 2] - target[:, :, 2]) ** 2
-        loss_nll = (z_diff_sq / (2 * (sigma_z ** 2)) + torch.log(sigma_z)).mean()
-
-        # Combine all three terms
-        total_loss = loss_mpjpe + (self.lambda_bone * loss_bone) + (self.lambda_nll * loss_nll)
-        return total_loss
+        # Combine terms
+        total_loss = loss_mpjpe + (self.lambda_bone * loss_bone)
+        return total_loss, loss_mpjpe, loss_bone
 
 def train():
     # Configuration
@@ -87,8 +86,8 @@ def train():
     ]
     
     # 2. Initialize Upgraded Model
-    # 17 nodes, 5 input channels, 128 hidden, 4 output channels
-    model = SemanticGCNLifter(num_nodes=17, in_channels=5, hidden_channels=128, out_channels=4).to(device)
+    # 17 nodes, 5 input channels, 128 hidden, 3 output channels (X, Y, Z)
+    model = SemanticGCNLifter(num_nodes=17, in_channels=5, hidden_channels=128, out_channels=3).to(device)
     
     # XLA / Torch Compile optimization for local hardware throughput (CUDA only)
     if device.type == 'cuda' and hasattr(torch, 'compile'):
@@ -99,7 +98,7 @@ def train():
             print(f"Torch compile failed (expected on some OS/environments): {e}. Proceeding without compilation.")
     
     # 3. Custom Loss & Optimizer
-    criterion = NodeDLoss(bone_pairs=bone_pairs).to(device)
+    criterion = DirectPose3DLoss(bone_pairs=bone_pairs).to(device)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     
     # 4. Training Loop
@@ -109,6 +108,10 @@ def train():
     for epoch in range(epochs):
         epoch_loss = 0.0
         
+        epoch_loss = 0.0
+        epoch_mpjpe = 0.0
+        epoch_bone = 0.0
+        
         for batch_idx, (nodes, adj, target) in enumerate(dataloader):
             nodes, adj, target = nodes.to(device), adj.to(device), target.to(device)
             
@@ -116,16 +119,20 @@ def train():
             predictions = model(nodes, adj)
             
             # Use the Trinity of Losses
-            loss = criterion(predictions, target)
+            loss, loss_mpjpe, loss_bone = criterion(predictions, target)
             
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             
             epoch_loss += loss.item()
+            epoch_mpjpe += loss_mpjpe.item()
+            epoch_bone += loss_bone.item()
             
         avg_loss = epoch_loss / len(dataloader)
-        print(f"Epoch [{epoch+1}/{epochs}] | Trinity Loss: {avg_loss:.4f}")
+        avg_mpjpe = epoch_mpjpe / len(dataloader)
+        avg_bone = epoch_bone / len(dataloader)
+        print(f"Epoch [{epoch+1}/{epochs}] | Loss: {avg_loss:.4f} | MPJPE: {avg_mpjpe:.4f}m | Bone: {avg_bone:.4f}m")
         
     # 5. Save Weights ready for ONNX export
     save_path = "3d_lifter_gcn_pro.pth"

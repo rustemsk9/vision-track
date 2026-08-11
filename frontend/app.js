@@ -26,6 +26,11 @@ function setEngineMode(mode) {
         modeBadge.innerText = mode === 'gcn_onnx' ? '3D Lifter GCN (ONNX)' : '3D Kinematic Engine';
         modeBadge.style.color = mode === 'gcn_onnx' ? '#ffbb00' : '#00ff88';
     }
+
+    if (typeof skeletonGroup !== 'undefined' && skeletonGroup) {
+        skeletonGroup.scale.set(1.0, 1.0, 1.0);
+        camera.position.set(0, 0, 3.8);
+    }
 }
 
 // Offscreen 640x640 Canvas for YOLO Preprocessing
@@ -72,7 +77,6 @@ const jointCount = 17;
 const geometry = new THREE.SphereGeometry(0.12, 16, 16);
 const material = new THREE.MeshPhongMaterial({ color: 0x00ff88, emissive: 0x004422 });
 const instancedMesh = new THREE.InstancedMesh(geometry, material, jointCount);
-scene.add(instancedMesh);
 
 // 3D Bone Connections (Instanced Rendering for 16 Cylinders)
 const bonePairs = [
@@ -86,9 +90,18 @@ const bonePairs = [
 const boneGeometry = new THREE.CylinderGeometry(0.04, 0.04, 1, 8);
 const boneMaterial = new THREE.MeshPhongMaterial({ color: 0x00d2ff, emissive: 0x003366 });
 const boneInstancedMesh = new THREE.InstancedMesh(boneGeometry, boneMaterial, bonePairs.length);
-scene.add(boneInstancedMesh);
 
-camera.position.set(0, 0, 5);
+// Create skeleton parent container for runtime scene scaling
+const skeletonGroup = new THREE.Group();
+scene.add(skeletonGroup);
+skeletonGroup.add(instancedMesh);
+skeletonGroup.add(boneInstancedMesh);
+
+// Fix 1 Option A: Boost display height by 25% via skeletonGroup container scale
+skeletonGroup.scale.set(1.25, 1.25, 1.25);
+
+// Fix 1 Option B: Move camera closer (Z=3.2) so subject fills canvas view
+camera.position.set(0, 0, 3.2);
 
 // Helper for WebCam Access
 async function getWebcamStream(constraints = { video: { width: 640, height: 480 } }) {
@@ -142,26 +155,27 @@ async function initEngine() {
         
         statusText.innerText = "Loading ONNX Models...";
         try {
-            ort.env.wasm.numThreads = 1;
+            ort.env.wasm.numThreads = Math.min(4, navigator.hardwareConcurrency || 4);
             ort.env.wasm.simd = true;
-            const providers = ['webgl', 'wasm'];
+            const providers = ['webgpu', 'webgl', 'wasm'];
 
-            logMsg("Loading 2D Pose Model (/static/yolov8n-pose.onnx)...");
+            logMsg(`Loading 2D Pose Model (/static/yolov8n-pose.onnx) with ${ort.env.wasm.numThreads} WASM threads...`);
             try {
                 poseSession = await ort.InferenceSession.create('/static/yolov8n-pose.onnx', { executionProviders: providers });
-                logMsg("Successfully loaded YOLOv8-Pose 2D Keypoint Model!");
+                logMsg("Successfully loaded YOLOv8-Pose 2D Keypoint Model (GPU Accelerated)!");
             } catch (poseErr) {
-                logMsg("yolov8n-pose.onnx failed on WebGL, attempting WASM...", "warn");
+                logMsg("yolov8n-pose.onnx failed on WebGPU/WebGL, attempting multi-thread WASM...", "warn");
                 poseSession = await ort.InferenceSession.create('/static/yolov8n-pose.onnx', { executionProviders: ['wasm'] });
-                logMsg("Successfully loaded YOLOv8-Pose (WASM)!");
+                logMsg("Successfully loaded YOLOv8-Pose (Multi-thread WASM)!");
             }
 
             logMsg("Loading 3D Lifter GCN (/static/models/3d_lifter_gcn.onnx)...");
             try {
-                gcnSession = await ort.InferenceSession.create('/static/models/3d_lifter_gcn.onnx', { executionProviders: ['wasm'] });
-                logMsg("Successfully loaded 3D Lifter GCN ONNX Model!");
+                gcnSession = await ort.InferenceSession.create('/static/models/3d_lifter_gcn.onnx', { executionProviders: providers });
+                logMsg("Successfully loaded 3D Lifter GCN ONNX Model (GPU Accelerated)!");
             } catch (gcnErr) {
-                logMsg("Could not load 3d_lifter_gcn.onnx: " + gcnErr.message, "warn");
+                gcnSession = await ort.InferenceSession.create('/static/models/3d_lifter_gcn.onnx', { executionProviders: ['wasm'] });
+                logMsg("Loaded 3D Lifter GCN ONNX Model (WASM)!");
             }
 
             statusText.innerText = "Running 3D Pose Inference (Active)";
@@ -229,48 +243,76 @@ async function runEndToEndPipeline(time) {
                 const lAnkle = getCOCO(15), rAnkle = getCOCO(16);
 
                 if (lHip && rHip && lShoulder && rShoulder) {
-                    const pelvis2D = { x: (lHip.x + rHip.x) / 2.0, y: (lHip.y + rHip.y) / 2.0 };
-                    const neck2D   = { x: (lShoulder.x + rShoulder.x) / 2.0, y: (lShoulder.y + rShoulder.y) / 2.0 };
-                    const head2D   = nose || { x: neck2D.x, y: neck2D.y - 30.0 };
+                    const pelvis2D = { x: (lHip.x + rHip.x) / 2.0, y: (lHip.y + rHip.y) / 2.0, conf: (lHip.conf + rHip.conf) / 2.0 };
+                    const neck2D   = { x: (lShoulder.x + rShoulder.x) / 2.0, y: (lShoulder.y + rShoulder.y) / 2.0, conf: (lShoulder.conf + rShoulder.conf) / 2.0 };
+                    const head2D   = nose && nose.conf > 0.2 ? nose : { x: neck2D.x, y: neck2D.y - 30.0, conf: 0.9 };
 
                     personCenterX = (pelvis2D.x) / MODEL_SIZE;
                     personCenterY = (pelvis2D.y) / MODEL_SIZE;
 
                     if (activeEngineMode === 'gcn_onnx' && gcnSession) {
                         // MODE B: Run 3D Lifter GCN ONNX Model (3d_lifter_gcn.onnx)
-                        const rawCOCO = [];
-                        for (let c = 0; c < 17; c++) rawCOCO.push(getCOCO(c));
-                        const minX = Math.min(...rawCOCO.map(k => k.x));
-                        const maxX = Math.max(...rawCOCO.map(k => k.x));
-                        const minY = Math.min(...rawCOCO.map(k => k.y));
-                        const maxY = Math.max(...rawCOCO.map(k => k.y));
-                        const bw = Math.max(20, maxX - minX);
-                        const bh = Math.max(20, maxY - minY);
+                        const sanitizeKP = (kp, parentKP, offsetX = 0, offsetY = 30) => {
+                            // Only trigger fallback if keypoint is completely missing (conf <= 0.05 or x/y <= 0)
+                            if (!kp || (kp.conf !== undefined && kp.conf <= 0.05) || kp.x <= 0 || kp.y <= 0) {
+                                return { x: parentKP ? parentKP.x + offsetX : 320, y: parentKP ? parentKP.y + offsetY : 240, conf: 0.05 };
+                            }
+                            return kp;
+                        };
+
+                        const s_rHip = sanitizeKP(rHip, pelvis2D, -20, 20);
+                        const s_rKnee = sanitizeKP(rKnee, s_rHip, 0, 50);
+                        const s_rAnkle = sanitizeKP(rAnkle, s_rKnee, 0, 50);
+
+                        const s_lHip = sanitizeKP(lHip, pelvis2D, 20, 20);
+                        const s_lKnee = sanitizeKP(lKnee, s_lHip, 0, 50);
+                        const s_lAnkle = sanitizeKP(lAnkle, s_lKnee, 0, 50);
+
+                        const s_lShoulder = sanitizeKP(lShoulder, neck2D, 30, 0);
+                        const s_lElbow = sanitizeKP(lElbow, s_lShoulder, 20, 30);
+                        const s_lWrist = sanitizeKP(lWrist, s_lElbow, 20, 30);
+
+                        const s_rShoulder = sanitizeKP(rShoulder, neck2D, -30, 0);
+                        const s_rElbow = sanitizeKP(rElbow, s_rShoulder, -20, 30);
+                        const s_rWrist = sanitizeKP(rWrist, s_rElbow, -20, 30);
+
+                        const spine12D = { x: pelvis2D.x * 0.67 + neck2D.x * 0.33, y: pelvis2D.y * 0.67 + neck2D.y * 0.33, conf: 0.9 };
+                        const spine22D = { x: pelvis2D.x * 0.33 + neck2D.x * 0.67, y: pelvis2D.y * 0.33 + neck2D.y * 0.67, conf: 0.9 };
+
+                        const rawGCNNodes = [
+                            pelvis2D,                                    // 0: Pelvis
+                            s_rHip, s_rKnee, s_rAnkle,                   // 1, 2, 3: Right Leg
+                            s_lHip, s_lKnee, s_lAnkle,                   // 4, 5, 6: Left Leg
+                            spine12D, spine22D, neck2D, head2D,          // 7, 8, 9, 10: Spine & Head
+                            s_lShoulder, s_lElbow, s_lWrist,             // 11, 12, 13: Left Arm
+                            s_rShoulder, s_rElbow, s_rWrist              // 14, 15, 16: Right Arm
+                        ];
+
+                        const xs = rawGCNNodes.map(k => k.x);
+                        const ys = rawGCNNodes.map(k => k.y);
+                        const minX = Math.min(...xs);
+                        const maxX = Math.max(...xs);
+                        const minY = Math.min(...ys);
+                        const maxY = Math.max(...ys);
+                        const bw = Math.max(20.0, maxX - minX);
+                        const bh = Math.max(20.0, maxY - minY);
 
                         const getNormKP = (kp) => ({
-                            x: Math.max(0, Math.min(256, ((kp.x - minX) / bw) * 256.0)),
-                            y: Math.max(0, Math.min(256, ((kp.y - minY) / bh) * 256.0)),
-                            conf: kp.conf
+                            x: Math.max(0.0, Math.min(256.0, ((kp.x - minX) / bw) * 256.0)),
+                            y: Math.max(0.0, Math.min(256.0, ((kp.y - minY) / bh) * 256.0)),
+                            conf: kp.conf || 1.0
                         });
 
-                        const gcnNodes = [
-                            { x: pelvis2D.x, y: pelvis2D.y, conf: (lHip.conf + rHip.conf)/2 },
-                            getNormKP(rHip), getNormKP(rKnee), getNormKP(rAnkle),
-                            getNormKP(lHip), getNormKP(lKnee), getNormKP(lAnkle),
-                            { x: (pelvis2D.x * 0.67 + neck2D.x * 0.33), y: (pelvis2D.y * 0.67 + neck2D.y * 0.33), conf: 0.9 },
-                            { x: (pelvis2D.x * 0.33 + neck2D.x * 0.67), y: (pelvis2D.y * 0.33 + neck2D.y * 0.67), conf: 0.9 },
-                            getNormKP(neck2D), getNormKP(head2D),
-                            getNormKP(lShoulder), getNormKP(lElbow), getNormKP(lWrist),
-                            getNormKP(rShoulder), getNormKP(rElbow), getNormKP(rWrist)
-                        ];
+                        const gcnNodes = rawGCNNodes.map(kp => getNormKP(kp));
 
                         const nodesData = new Float32Array(17 * 5);
                         for (let i = 0; i < 17; i++) {
-                            nodesData[i * 5 + 0] = gcnNodes[i].y;
-                            nodesData[i * 5 + 1] = 256.0 - gcnNodes[i].x;
+                            // Channel 0: X in [-1, 1], Channel 1: Y in [-1, 1] (Matching dataset.py)
+                            nodesData[i * 5 + 0] = (gcnNodes[i].x / 128.0) - 1.0;
+                            nodesData[i * 5 + 1] = (gcnNodes[i].y / 128.0) - 1.0;
                             nodesData[i * 5 + 2] = 10.0;
                             nodesData[i * 5 + 3] = 10.0;
-                            nodesData[i * 5 + 4] = gcnNodes[i].conf || 1.0;
+                            nodesData[i * 5 + 4] = gcnNodes[i].conf;
                         }
 
                         const tensorNodes = new ort.Tensor('float32', nodesData, [1, 17, 5]);
@@ -278,21 +320,40 @@ async function runEndToEndPipeline(time) {
                         const gcnResults = await gcnSession.run({ input_nodes: tensorNodes, input_adj: tensorAdj });
                         const outputData = gcnResults.output_joints.data;
 
-                        // Model now outputs PELVIS-RELATIVE coords (trained with pelvis subtracted).
-                        // Output channels: [Blender_X, Blender_Y(depth), Blender_Z(height), Sigma_Z]
-                        // Remap to Three.js: X=X, Y=Blender_Z(height), Z=-Blender_Y(depth)
+                        // Model outputs Three.js native 3D coords [X, Y(height), Z(depth)]
+                        const rootX = outputData[0 * 3 + 0];
+                        const rootY = outputData[0 * 3 + 1];
+                        const rootZ = outputData[0 * 3 + 2];
+
+                        const GCN_DISPLAY_SCALE = 1.35; // Boosts ~1.36m span to ~1.83m real human height
+
                         for (let i = 0; i < 17; i++) {
-                            currentJoints3D[i].x = -(outputData[i * 4 + 0]); // Mirror X for webcam
-                            currentJoints3D[i].y = outputData[i * 4 + 2];    // Blender Z → Three.js Y (height)
-                            currentJoints3D[i].z = -outputData[i * 4 + 1];   // Blender Y → Three.js -Z (depth)
+                            // 1. Subtract Root (Pelvis) offset to anchor pelvis at origin (0, 0, 0)
+                            const relX = (outputData[i * 3 + 0] - rootX) * GCN_DISPLAY_SCALE;
+                            const relY = (outputData[i * 3 + 1] - rootY) * GCN_DISPLAY_SCALE;
+                            const relZ = (outputData[i * 3 + 2] - rootZ) * GCN_DISPLAY_SCALE;
+
+                            // 2. Metric outlier clamping [-2.5m, +2.5m]
+                            const clampedX = Math.max(-2.5, Math.min(2.5, relX));
+                            const clampedY = Math.max(-2.5, Math.min(2.5, relY));
+                            const clampedZ = Math.max(-2.5, Math.min(2.5, relZ));
+
+                            currentJoints3D[i].x = -clampedX;  // Mirror X for webcam
+                            currentJoints3D[i].y = clampedY;   // Direct Three.js Y (Height up)
+                            currentJoints3D[i].z = clampedZ;    // Direct Three.js Z (Depth)
+                        }
+
+                        if (performance.now() - lastLogTime > 2500) {
+                            console.log("[ONNX GCN Raw Tensor Output (17x3)]", outputData);
+                            console.log(`[ONNX GCN Root Joint 0 (Pelvis)] X:${currentJoints3D[0].x.toFixed(3)} Y:${currentJoints3D[0].y.toFixed(3)} Z:${currentJoints3D[0].z.toFixed(3)}`);
                         }
 
                     } else {
-                        // MODE A: Direct 2D-to-3D Kinematic Pose Engine
+                        // MODE A: Direct 2D-to-3D Kinematic Pose Engine (Calibrated to ~1.8m vertical span)
                         const lift3D = (kp2D, parent2D, depthFactor = 0.0) => {
                             if (!kp2D) return { x: 0, y: 0, z: 0 };
-                            const x3d = -((kp2D.x - pelvis2D.x) / 120.0);
-                            const y3d = -((kp2D.y - pelvis2D.y) / 120.0);
+                            const x3d = -((kp2D.x - pelvis2D.x) / 160.0);
+                            const y3d = -((kp2D.y - pelvis2D.y) / 160.0);
                             const torsoLen = Math.hypot(neck2D.x - pelvis2D.x, neck2D.y - pelvis2D.y) || 100.0;
                             const z3d = (depthFactor * (torsoLen / 100.0));
                             return { x: x3d, y: y3d, z: z3d };

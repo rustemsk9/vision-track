@@ -132,14 +132,13 @@ class VisionTrackDataset(Dataset):
         for i, kp in enumerate(kps):
             x_norm = max(0.0, min(256.0, ((kp[0] - min_x) / bw) * 256.0))
             y_norm = max(0.0, min(256.0, ((kp[1] - min_y) / bh) * 256.0))
-            # Channel order: [y_row, 256-x_col] — matches JS nodesData layout:
-            #   nodesData[i*5+0] = gcnNodes[i].y
-            #   nodesData[i*5+1] = 256.0 - gcnNodes[i].x
-            nodes_2d[i, 0] = y_norm
-            nodes_2d[i, 1] = 256.0 - x_norm
+            
+            # FIX 1: Channel 0 = X, Channel 1 = Y
+            # FIX 2: Standardize to [-1.0, 1.0] zero-centered range
+            nodes_2d[i, 0] = (x_norm / 128.0) - 1.0
+            nodes_2d[i, 1] = (y_norm / 128.0) - 1.0
 
         # Append padding channels: r_left=10, r_right=10, visibility=1
-        # Matches JS: nodesData[i*5+2]=10, [i*5+3]=10, [i*5+4]=conf(1.0)
         padding = np.zeros((17, 3), dtype=np.float32)
         padding[:, 0] = 10.0
         padding[:, 1] = 10.0
@@ -148,14 +147,11 @@ class VisionTrackDataset(Dataset):
 
         # ----------------------------------------------------------------
         # 2. Static Anatomical Adjacency Matrix (17, 17)
-        #    Same bone pair graph used in the JS renderer and train_gcn.py.
         # ----------------------------------------------------------------
         adj_matrix = STATIC_ADJ.copy()
 
         # ----------------------------------------------------------------
-        # 3. Build 3D Target Joints (17, 3) — PELVIS-RELATIVE
-        #    Standard in all 3D pose estimation: subtract Pelvis root so
-        #    the model learns body-relative offsets, not world coordinates.
+        # 3. Build 3D Target Joints (17, 3) — PELVIS-RELATIVE & WebGL Remapped
         # ----------------------------------------------------------------
         target_joints = []
         for name in GCN_JOINT_NAMES:
@@ -170,10 +166,16 @@ class VisionTrackDataset(Dataset):
         pelvis_pos = target_joints[0].copy()
         target_joints = target_joints - pelvis_pos  # Pelvis becomes [0, 0, 0]
 
+        # FIX 3: Convert Blender [X, Y, Z] -> Three.js/WebGL [X, Z, -Y]
+        webgl_targets = np.zeros_like(target_joints)
+        webgl_targets[:, 0] =  target_joints[:, 0]  # X_webgl = X_blender
+        webgl_targets[:, 1] =  target_joints[:, 2]  # Y_webgl = Z_blender (Height)
+        webgl_targets[:, 2] = -target_joints[:, 1]  # Z_webgl = -Y_blender (Depth)
+
         # Convert to tensors
-        nodes_tensor  = torch.tensor(nodes_5d,    dtype=torch.float32)
-        adj_tensor    = torch.tensor(adj_matrix,  dtype=torch.float32)
-        target_tensor = torch.tensor(target_joints, dtype=torch.float32)
+        nodes_tensor  = torch.tensor(nodes_5d,      dtype=torch.float32)
+        adj_tensor    = torch.tensor(adj_matrix,    dtype=torch.float32)
+        target_tensor = torch.tensor(webgl_targets, dtype=torch.float32)
 
         # Sanitize NaN/Inf
         nodes_tensor  = torch.nan_to_num(nodes_tensor,  nan=0.0)
