@@ -133,10 +133,10 @@ class VisionTrackDataset(Dataset):
             x_norm = max(0.0, min(256.0, ((kp[0] - min_x) / bw) * 256.0))
             y_norm = max(0.0, min(256.0, ((kp[1] - min_y) / bh) * 256.0))
             
-            # FIX 1: Channel 0 = X, Channel 1 = Y
-            # FIX 2: Standardize to [-1.0, 1.0] zero-centered range
+            # X: [-1.0 (Left) to +1.0 (Right)]
             nodes_2d[i, 0] = (x_norm / 128.0) - 1.0
-            nodes_2d[i, 1] = (y_norm / 128.0) - 1.0
+            # Y: [+1.0 (Top/Up) to -1.0 (Bottom/Down)] - Inverted for Cartesian WebGL alignment
+            nodes_2d[i, 1] = 1.0 - (y_norm / 128.0)
 
         # Append padding channels: r_left=10, r_right=10, visibility=1
         padding = np.zeros((17, 3), dtype=np.float32)
@@ -166,16 +166,10 @@ class VisionTrackDataset(Dataset):
         pelvis_pos = target_joints[0].copy()
         target_joints = target_joints - pelvis_pos  # Pelvis becomes [0, 0, 0]
 
-        # FIX 3: Convert Blender [X, Y, Z] -> Three.js/WebGL [X, Z, -Y]
-        webgl_targets = np.zeros_like(target_joints)
-        webgl_targets[:, 0] =  target_joints[:, 0]  # X_webgl = X_blender
-        webgl_targets[:, 1] =  target_joints[:, 2]  # Y_webgl = Z_blender (Height)
-        webgl_targets[:, 2] = -target_joints[:, 1]  # Z_webgl = -Y_blender (Depth)
-
-        # Convert to tensors
+        # Convert to tensors (joints_3d is already in Camera View Space [X_right, Y_up, Z_depth])
         nodes_tensor  = torch.tensor(nodes_5d,      dtype=torch.float32)
         adj_tensor    = torch.tensor(adj_matrix,    dtype=torch.float32)
-        target_tensor = torch.tensor(webgl_targets, dtype=torch.float32)
+        target_tensor = torch.tensor(target_joints,   dtype=torch.float32)
 
         # Sanitize NaN/Inf
         nodes_tensor  = torch.nan_to_num(nodes_tensor,  nan=0.0)

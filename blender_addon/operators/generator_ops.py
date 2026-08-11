@@ -214,7 +214,7 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
             # --- Directly apply AMASS pose to bones (NO keyframe_insert) ---
             pelvis_bone = rig.pose.bones.get('Pelvis')
             if pelvis_bone:
-                # Zero out horizontal drift; keep only vertical (Z) translation
+                # Treadmill Effect: Lock X and Y to 0.0 so subject stays centered; keep Z (Height) for squats/jumps
                 pelvis_bone.location = (0.0, 0.0, float(trans[f][2]))
 
             for i, joint_name in enumerate(joint_names):
@@ -250,11 +250,23 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
             rig_eval = rig.evaluated_get(depsgraph)
             cam_eval = cam_obj.evaluated_get(depsgraph) if cam_obj else None
 
-            # --- 3D joint world positions (from evaluated rig) ---
+            # --- 3D joint positions IN CAMERA VIEW SPACE ---
             joints_3d = {}
-            for bone in rig_eval.pose.bones:
-                gp = rig_eval.matrix_world @ bone.head
-                joints_3d[bone.name] = [gp.x, gp.y, gp.z]
+            if cam_eval is not None:
+                inv_cam_matrix = cam_eval.matrix_world.inverted()
+                for bone in rig_eval.pose.bones:
+                    world_pos = rig_eval.matrix_world @ bone.head
+                    cam_pos = inv_cam_matrix @ world_pos
+                    # Map Blender Camera Space -> WebGL standard [X_right, Y_up(height), Z_depth]
+                    joints_3d[bone.name] = [
+                        float(cam_pos.x),
+                        float(cam_pos.z),
+                        float(-cam_pos.y)
+                    ]
+            else:
+                for bone in rig_eval.pose.bones:
+                    gp = rig_eval.matrix_world @ bone.head
+                    joints_3d[bone.name] = [float(gp.x), float(gp.y), float(gp.z)]
 
             # --- 2D projected keypoints (via evaluated camera, no Track To jitter) ---
             keypoints_2d = {}

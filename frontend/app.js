@@ -307,9 +307,9 @@ async function runEndToEndPipeline(time) {
 
                         const nodesData = new Float32Array(17 * 5);
                         for (let i = 0; i < 17; i++) {
-                            // Channel 0: X in [-1, 1], Channel 1: Y in [-1, 1] (Matching dataset.py)
+                            // Channel 0: X in [-1, 1], Channel 1: Y in [+1(Up), -1(Down)] (Matching dataset.py)
                             nodesData[i * 5 + 0] = (gcnNodes[i].x / 128.0) - 1.0;
-                            nodesData[i * 5 + 1] = (gcnNodes[i].y / 128.0) - 1.0;
+                            nodesData[i * 5 + 1] = 1.0 - (gcnNodes[i].y / 128.0);
                             nodesData[i * 5 + 2] = 10.0;
                             nodesData[i * 5 + 3] = 10.0;
                             nodesData[i * 5 + 4] = gcnNodes[i].conf;
