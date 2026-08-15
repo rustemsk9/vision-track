@@ -35,6 +35,16 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
         options={'HIDDEN'}
     )
 
+    export_masks: bpy.props.BoolProperty(
+        name="Export PNG Masks",
+        description="Render and save mask_XXXX.png files. Uncheck for 100x faster coordinate-only export.",
+        default=False
+    )
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "export_masks", text="Export PNG Masks (Slow)")
+
     def execute(self, context):
         directory = self.filepath
         if not os.path.isdir(directory):
@@ -239,11 +249,15 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
             bpy.ops.object.mode_set(mode='OBJECT')
             bpy.context.view_layer.update()
 
-            # --- Render mask ---
+            # --- Render mask (optional) ---
             frame_label = f + 1  # 1-indexed label for filename
-            mask_path = os.path.join(output_dir, f"mask_{frame_label:04d}.png")
-            scene.render.filepath = mask_path
-            bpy.ops.render.render(write_still=True)
+            should_export_masks = getattr(self, 'export_masks', False) or getattr(scene, 'vt_export_masks', False)
+            if should_export_masks:
+                mask_path = os.path.join(output_dir, f"mask_{frame_label:04d}.png")
+                scene.render.filepath = mask_path
+                bpy.ops.render.render(write_still=True)
+            else:
+                bpy.context.view_layer.update()
 
             # --- Get evaluated objects (constraints + pose fully resolved) ---
             depsgraph = bpy.context.evaluated_depsgraph_get()
@@ -260,8 +274,8 @@ class VISIONTRACK_OT_generate_data(bpy.types.Operator, ImportHelper):
                     # Map Blender Camera Space -> WebGL standard [X_right, Y_up(height), Z_depth]
                     joints_3d[bone.name] = [
                         float(cam_pos.x),
-                        float(cam_pos.z),
-                        float(-cam_pos.y)
+                        float(cam_pos.y),
+                        float(-cam_pos.z)
                     ]
             else:
                 for bone in rig_eval.pose.bones:
@@ -365,5 +379,30 @@ class VISIONTRACK_PT_panel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text="Select AMASS Folder:")
-        layout.operator("visiontrack.generate_data", icon='PLAY', text="Batch Generate Data")
+        
+        # Explicit Toggle Box right in the 3D Viewport N-Panel
+        box = layout.box()
+        box.label(text="Export Settings:", icon='PREFERENCES')
+        box.prop(context.scene, "vt_export_masks", text="Export PNG Masks (Slow)")
+        if not context.scene.vt_export_masks:
+            box.label(text="⚡ Fast Mode: JSONL only (100x speed)", icon='FORWARD')
+        else:
+            box.label(text="🐢 Slow Mode: Writing PNGs to disk", icon='IMAGE_DATA')
+            
+        layout.separator()
+        layout.label(text="Batch Process AMASS:")
+        op = layout.operator("visiontrack.generate_data", icon='PLAY', text="Batch Generate Data")
+        op.export_masks = context.scene.vt_export_masks
+
+
+def register():
+    bpy.types.Scene.vt_export_masks = bpy.props.BoolProperty(
+        name="Export PNG Masks",
+        description="Render and save mask_XXXX.png files. Uncheck for 100x faster coordinate-only export.",
+        default=False
+    )
+
+
+def unregister():
+    if hasattr(bpy.types.Scene, "vt_export_masks"):
+        del bpy.types.Scene.vt_export_masks

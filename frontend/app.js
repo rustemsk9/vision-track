@@ -28,8 +28,15 @@ function setEngineMode(mode) {
     }
 
     if (typeof skeletonGroup !== 'undefined' && skeletonGroup) {
-        skeletonGroup.scale.set(1.0, 1.0, 1.0);
-        camera.position.set(0, 0, 3.8);
+        if (mode === 'gcn_onnx') {
+            // Mode B: 3D Lifter GCN (ONNX) - scaled to fill viewport
+            skeletonGroup.scale.set(1.35, 1.35, 1.35);
+            camera.position.set(0, 0, 3.0);
+        } else {
+            // Mode A: 3D Kinematic Engine Baseline
+            skeletonGroup.scale.set(1.0, 1.0, 1.0);
+            camera.position.set(0, 0, 3.8);
+        }
     }
 }
 
@@ -320,27 +327,30 @@ async function runEndToEndPipeline(time) {
                         const gcnResults = await gcnSession.run({ input_nodes: tensorNodes, input_adj: tensorAdj });
                         const outputData = gcnResults.output_joints.data;
 
-                        // Model outputs Three.js native 3D coords [X, Y(height), Z(depth)]
+                        // Model trained output channels:
+                        // Channel 0 = X (horizontal)
+                        // Channel 1 = Depth (front/back relative to camera)
+                        // Channel 2 = Height (vertical: negative is UP/head, positive is DOWN/feet)
                         const rootX = outputData[0 * 3 + 0];
-                        const rootY = outputData[0 * 3 + 1];
-                        const rootZ = outputData[0 * 3 + 2];
+                        const rootDepth = outputData[0 * 3 + 1];
+                        const rootHeight = outputData[0 * 3 + 2];
 
-                        const GCN_DISPLAY_SCALE = 1.35; // Boosts ~1.36m span to ~1.83m real human height
+                        const GCN_DISPLAY_SCALE = 1.35;
 
                         for (let i = 0; i < 17; i++) {
                             // 1. Subtract Root (Pelvis) offset to anchor pelvis at origin (0, 0, 0)
                             const relX = (outputData[i * 3 + 0] - rootX) * GCN_DISPLAY_SCALE;
-                            const relY = (outputData[i * 3 + 1] - rootY) * GCN_DISPLAY_SCALE;
-                            const relZ = (outputData[i * 3 + 2] - rootZ) * GCN_DISPLAY_SCALE;
+                            const relDepth = (outputData[i * 3 + 1] - rootDepth) * GCN_DISPLAY_SCALE;
+                            const relHeight = (outputData[i * 3 + 2] - rootHeight) * GCN_DISPLAY_SCALE;
 
                             // 2. Metric outlier clamping [-2.5m, +2.5m]
                             const clampedX = Math.max(-2.5, Math.min(2.5, relX));
-                            const clampedY = Math.max(-2.5, Math.min(2.5, relY));
-                            const clampedZ = Math.max(-2.5, Math.min(2.5, relZ));
+                            const clampedDepth = Math.max(-2.5, Math.min(2.5, relDepth));
+                            const clampedHeight = Math.max(-2.5, Math.min(2.5, relHeight));
 
-                            currentJoints3D[i].x = -clampedX;  // Mirror X for webcam
-                            currentJoints3D[i].y = clampedY;   // Direct Three.js Y (Height up)
-                            currentJoints3D[i].z = clampedZ;    // Direct Three.js Z (Depth)
+                            currentJoints3D[i].x = -clampedX;      // Mirror X for webcam
+                            currentJoints3D[i].y = -clampedHeight; // Channel 2 is Height -> Three.js Y (+Y is UP)
+                            currentJoints3D[i].z = clampedDepth;   // Channel 1 is Depth -> Three.js Z (Depth)
                         }
 
                         if (performance.now() - lastLogTime > 2500) {
