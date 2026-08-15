@@ -28,15 +28,8 @@ function setEngineMode(mode) {
     }
 
     if (typeof skeletonGroup !== 'undefined' && skeletonGroup) {
-        if (mode === 'gcn_onnx') {
-            // Mode B: 3D Lifter GCN (ONNX) - scaled to fill viewport
-            skeletonGroup.scale.set(1.35, 1.35, 1.35);
-            camera.position.set(0, 0, 3.0);
-        } else {
-            // Mode A: 3D Kinematic Engine Baseline
-            skeletonGroup.scale.set(1.0, 1.0, 1.0);
-            camera.position.set(0, 0, 3.8);
-        }
+        skeletonGroup.scale.set(2.0, 2.0, 2.0);
+        camera.position.set(0, 0, 3.8);
     }
 }
 
@@ -81,7 +74,7 @@ scene.add(directionalLight);
 
 // Phase 4: Three.js Instanced Rendering for 17 Joint Spheres
 const jointCount = 17;
-const geometry = new THREE.SphereGeometry(0.12, 16, 16);
+const geometry = new THREE.SphereGeometry(0.08, 16, 16);
 const material = new THREE.MeshPhongMaterial({ color: 0x00ff88, emissive: 0x004422 });
 const instancedMesh = new THREE.InstancedMesh(geometry, material, jointCount);
 
@@ -94,7 +87,7 @@ const bonePairs = [
     [9,11], [11,12], [12,13],// Left Arm
     [9,14], [14,15], [15,16] // Right Arm
 ];
-const boneGeometry = new THREE.CylinderGeometry(0.04, 0.04, 1, 8);
+const boneGeometry = new THREE.CylinderGeometry(0.03, 0.03, 1, 8);
 const boneMaterial = new THREE.MeshPhongMaterial({ color: 0x00d2ff, emissive: 0x003366 });
 const boneInstancedMesh = new THREE.InstancedMesh(boneGeometry, boneMaterial, bonePairs.length);
 
@@ -104,11 +97,8 @@ scene.add(skeletonGroup);
 skeletonGroup.add(instancedMesh);
 skeletonGroup.add(boneInstancedMesh);
 
-// Fix 1 Option A: Boost display height by 25% via skeletonGroup container scale
-skeletonGroup.scale.set(1.25, 1.25, 1.25);
-
-// Fix 1 Option B: Move camera closer (Z=3.2) so subject fills canvas view
-camera.position.set(0, 0, 3.2);
+skeletonGroup.scale.set(2.0, 2.0, 2.0);
+camera.position.set(0, 0, 3.8);
 
 // Helper for WebCam Access
 async function getWebcamStream(constraints = { video: { width: 640, height: 480 } }) {
@@ -438,13 +428,13 @@ function startRenderLoop() {
             runEndToEndPipeline(time);
         }
 
-        const worldX = -(personCenterX - 0.5) * 4.5;
-        const worldY = -(personCenterY - 0.5) * 3.5;
+        const worldX = -(personCenterX - 0.5) * 2.25;
+        const worldY = -(personCenterY - 0.5) * 1.75;
 
         for (let i = 0; i < jointCount; i++) {
-            const px = currentJoints3D[i].x * 1.5 + worldX;
-            const py = currentJoints3D[i].y * 1.5 + worldY;
-            const pz = currentJoints3D[i].z * 1.5;
+            const px = currentJoints3D[i].x + worldX;
+            const py = currentJoints3D[i].y + worldY;
+            const pz = currentJoints3D[i].z;
 
             dummy.position.set(px, py, pz);
             dummy.updateMatrix();
@@ -455,13 +445,13 @@ function startRenderLoop() {
         for (let b = 0; b < bonePairs.length; b++) {
             const [i, j] = bonePairs[b];
 
-            const p1x = currentJoints3D[i].x * 1.5 + worldX;
-            const p1y = currentJoints3D[i].y * 1.5 + worldY;
-            const p1z = currentJoints3D[i].z * 1.5;
+            const p1x = currentJoints3D[i].x + worldX;
+            const p1y = currentJoints3D[i].y + worldY;
+            const p1z = currentJoints3D[i].z;
 
-            const p2x = currentJoints3D[j].x * 1.5 + worldX;
-            const p2y = currentJoints3D[j].y * 1.5 + worldY;
-            const p2z = currentJoints3D[j].z * 1.5;
+            const p2x = currentJoints3D[j].x + worldX;
+            const p2y = currentJoints3D[j].y + worldY;
+            const p2z = currentJoints3D[j].z;
 
             const p1 = new THREE.Vector3(p1x, p1y, p1z);
             const p2 = new THREE.Vector3(p2x, p2y, p2z);
