@@ -285,31 +285,23 @@ async function runEndToEndPipeline(time) {
                             s_rShoulder, s_rElbow, s_rWrist              // 14, 15, 16: Right Arm
                         ];
 
-                        const xs = rawGCNNodes.map(k => k.x);
-                        const ys = rawGCNNodes.map(k => k.y);
-                        const minX = Math.min(...xs);
-                        const maxX = Math.max(...xs);
-                        const minY = Math.min(...ys);
-                        const maxY = Math.max(...ys);
-                        const bw = Math.max(20.0, maxX - minX);
-                        const bh = Math.max(20.0, maxY - minY);
-
-                        const getNormKP = (kp) => ({
-                            x: Math.max(0.0, Math.min(256.0, ((kp.x - minX) / bw) * 256.0)),
-                            y: Math.max(0.0, Math.min(256.0, ((kp.y - minY) / bh) * 256.0)),
-                            conf: kp.conf || 1.0
-                        });
-
-                        const gcnNodes = rawGCNNodes.map(kp => getNormKP(kp));
+                        // Torso-anchored scale normalization (prevents hands/feet from self-distorting bounding box)
+                        const torsoLen = Math.hypot(neck2D.x - pelvis2D.x, neck2D.y - pelvis2D.y) || 120.0;
+                        const bodyScale = Math.max(80.0, torsoLen * 2.8); // Est. full body pixel height
 
                         const nodesData = new Float32Array(17 * 5);
                         for (let i = 0; i < 17; i++) {
-                            // Channel 0: X in [-1, 1], Channel 1: Y in [+1(Up), -1(Down)] (Matching dataset.py)
-                            nodesData[i * 5 + 0] = (gcnNodes[i].x / 128.0) - 1.0;
-                            nodesData[i * 5 + 1] = 1.0 - (gcnNodes[i].y / 128.0);
+                            const rawKP = rawGCNNodes[i];
+                            // Pelvis-centered Cartesian normalization in [-1.0, 1.0]
+                            const normX = (rawKP.x - pelvis2D.x) / (bodyScale * 0.5);
+                            const normY = (rawKP.y - pelvis2D.y) / (bodyScale * 0.5);
+
+                            // Channel 0: X in [-1.5, 1.5], Channel 1: Y in [+1.5(Up), -1.5(Down)]
+                            nodesData[i * 5 + 0] = Math.max(-1.5, Math.min(1.5, normX));
+                            nodesData[i * 5 + 1] = Math.max(-1.5, Math.min(1.5, -normY)); // -normY: UP is positive (+), DOWN is negative (-)
                             nodesData[i * 5 + 2] = 10.0;
                             nodesData[i * 5 + 3] = 10.0;
-                            nodesData[i * 5 + 4] = gcnNodes[i].conf;
+                            nodesData[i * 5 + 4] = rawKP.conf || 1.0;
                         }
 
                         const tensorNodes = new ort.Tensor('float32', nodesData, [1, 17, 5]);
@@ -317,30 +309,30 @@ async function runEndToEndPipeline(time) {
                         const gcnResults = await gcnSession.run({ input_nodes: tensorNodes, input_adj: tensorAdj });
                         const outputData = gcnResults.output_joints.data;
 
-                        // Model trained output channels:
+                        // Direct Three.js Native Output Mapping (from 403k-sample trained model):
                         // Channel 0 = X (horizontal)
-                        // Channel 1 = Depth (front/back relative to camera)
-                        // Channel 2 = Height (vertical: negative is UP/head, positive is DOWN/feet)
+                        // Channel 1 = Y (vertical height: +Y is UP/head, -Y is DOWN/feet)
+                        // Channel 2 = Z (depth away from camera)
                         const rootX = outputData[0 * 3 + 0];
-                        const rootDepth = outputData[0 * 3 + 1];
-                        const rootHeight = outputData[0 * 3 + 2];
+                        const rootY = outputData[0 * 3 + 1];
+                        const rootZ = outputData[0 * 3 + 2];
 
-                        const GCN_DISPLAY_SCALE = 1.35;
+                        const GCN_DISPLAY_SCALE = 1.0; // 1:1 metric scale in Three.js
 
                         for (let i = 0; i < 17; i++) {
                             // 1. Subtract Root (Pelvis) offset to anchor pelvis at origin (0, 0, 0)
                             const relX = (outputData[i * 3 + 0] - rootX) * GCN_DISPLAY_SCALE;
-                            const relDepth = (outputData[i * 3 + 1] - rootDepth) * GCN_DISPLAY_SCALE;
-                            const relHeight = (outputData[i * 3 + 2] - rootHeight) * GCN_DISPLAY_SCALE;
+                            const relY = (outputData[i * 3 + 1] - rootY) * GCN_DISPLAY_SCALE;
+                            const relZ = (outputData[i * 3 + 2] - rootZ) * GCN_DISPLAY_SCALE;
 
                             // 2. Metric outlier clamping [-2.5m, +2.5m]
                             const clampedX = Math.max(-2.5, Math.min(2.5, relX));
-                            const clampedDepth = Math.max(-2.5, Math.min(2.5, relDepth));
-                            const clampedHeight = Math.max(-2.5, Math.min(2.5, relHeight));
+                            const clampedY = Math.max(-2.5, Math.min(2.5, relY));
+                            const clampedZ = Math.max(-2.5, Math.min(2.5, relZ));
 
-                            currentJoints3D[i].x = -clampedX;      // Mirror X for webcam
-                            currentJoints3D[i].y = -clampedHeight; // Channel 2 is Height -> Three.js Y (+Y is UP)
-                            currentJoints3D[i].z = clampedDepth;   // Channel 1 is Depth -> Three.js Z (Depth)
+                            currentJoints3D[i].x = -clampedX;  // Mirror X for webcam view
+                            currentJoints3D[i].y = clampedY;   // Direct Height (+Y is UP)
+                            currentJoints3D[i].z = clampedZ;   // Direct Depth
                         }
 
                         if (performance.now() - lastLogTime > 2500) {
@@ -349,10 +341,10 @@ async function runEndToEndPipeline(time) {
                         }
 
                     } else {
-                        // MODE A: Direct 2D-to-3D Kinematic Pose Engine (Calibrated to ~1.8m vertical span)
+                        // MODE A: Direct 2D-to-3D Kinematic Pose Engine (Calibrated to ~1.8m height, ~0.65m width)
                         const lift3D = (kp2D, parent2D, depthFactor = 0.0) => {
                             if (!kp2D) return { x: 0, y: 0, z: 0 };
-                            const x3d = -((kp2D.x - pelvis2D.x) / 160.0);
+                            const x3d = -((kp2D.x - pelvis2D.x) / 350.0); // Calibrated for anatomical parity with GCN (~0.65m)
                             const y3d = -((kp2D.y - pelvis2D.y) / 160.0);
                             const torsoLen = Math.hypot(neck2D.x - pelvis2D.x, neck2D.y - pelvis2D.y) || 100.0;
                             const z3d = (depthFactor * (torsoLen / 100.0));
