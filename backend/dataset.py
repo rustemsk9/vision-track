@@ -117,23 +117,23 @@ class VisionTrackDataset(Dataset):
             uv = keypoints_2d.get(name, [320.0, 240.0])  # fallback: image center
             kps.append([float(uv[0]), float(uv[1])])     # [u=x_pixel, v=y_pixel]
 
-        # Pelvis-anchored torso scale normalization (prevents hands/feet self-scaling)
+        # Pelvis-anchored torso scale normalization with +15% extended headroom
         pelvis_2d = np.array(kps[0], dtype=np.float32)
         neck_2d   = np.array(kps[9], dtype=np.float32)
         torso_len = float(np.linalg.norm(neck_2d - pelvis_2d))
         if torso_len < 10.0:
             torso_len = 120.0
-        body_scale = max(80.0, torso_len * 2.8)
+        body_scale = max(80.0, torso_len * 2.8 * 1.15)  # +15% Headroom buffer
 
         nodes_2d = np.zeros((17, 2), dtype=np.float32)
         for i, kp in enumerate(kps):
             norm_x = (kp[0] - pelvis_2d[0]) / (body_scale * 0.5)
             norm_y = (kp[1] - pelvis_2d[1]) / (body_scale * 0.5)
             
-            # X: [-1.5 (Left) to +1.5 (Right)]
-            nodes_2d[i, 0] = np.clip(norm_x, -1.5, 1.5)
-            # Y: [+1.5 (Top/Up) to -1.5 (Bottom/Down)] - Inverted for Cartesian WebGL alignment
-            nodes_2d[i, 1] = np.clip(-norm_y, -1.5, 1.5)
+            # X: [-1.75 (Left) to +1.75 (Right)]
+            nodes_2d[i, 0] = np.clip(norm_x, -1.75, 1.75)
+            # Y: [+1.75 (Top/Up) to -1.75 (Bottom/Down)] - Inverted for Cartesian WebGL alignment
+            nodes_2d[i, 1] = np.clip(-norm_y, -1.75, 1.75)
 
         # Append padding channels: r_left=10, r_right=10, visibility=1
         padding = np.zeros((17, 3), dtype=np.float32)

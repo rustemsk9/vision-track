@@ -196,6 +196,7 @@ async function runEndToEndPipeline(time) {
 
     try {
         let personFound = false;
+        let lWrist = null, rWrist = null;
 
         if (poseSession) {
             const inputTensor = preprocessVideoFrame();
@@ -234,7 +235,8 @@ async function runEndToEndPipeline(time) {
                 const nose = getCOCO(0);
                 const lShoulder = getCOCO(5), rShoulder = getCOCO(6);
                 const lElbow = getCOCO(7), rElbow = getCOCO(8);
-                const lWrist = getCOCO(9), rWrist = getCOCO(10);
+                lWrist = getCOCO(9);
+                rWrist = getCOCO(10);
                 const lHip = getCOCO(11), rHip = getCOCO(12);
                 const lKnee = getCOCO(13), rKnee = getCOCO(14);
                 const lAnkle = getCOCO(15), rAnkle = getCOCO(16);
@@ -285,20 +287,20 @@ async function runEndToEndPipeline(time) {
                             s_rShoulder, s_rElbow, s_rWrist              // 14, 15, 16: Right Arm
                         ];
 
-                        // Torso-anchored scale normalization (prevents hands/feet from self-distorting bounding box)
+                        // Torso-anchored scale normalization with +15% extended headroom
                         const torsoLen = Math.hypot(neck2D.x - pelvis2D.x, neck2D.y - pelvis2D.y) || 120.0;
-                        const bodyScale = Math.max(80.0, torsoLen * 2.8); // Est. full body pixel height
+                        const bodyScale = Math.max(80.0, torsoLen * 2.8 * 1.15); // +15% Headroom buffer
 
                         const nodesData = new Float32Array(17 * 5);
                         for (let i = 0; i < 17; i++) {
                             const rawKP = rawGCNNodes[i];
-                            // Pelvis-centered Cartesian normalization in [-1.0, 1.0]
+                            // Pelvis-centered Cartesian normalization in [-1.0, 1.0] with 15% margin
                             const normX = (rawKP.x - pelvis2D.x) / (bodyScale * 0.5);
                             const normY = (rawKP.y - pelvis2D.y) / (bodyScale * 0.5);
 
-                            // Channel 0: X in [-1.5, 1.5], Channel 1: Y in [+1.5(Up), -1.5(Down)]
-                            nodesData[i * 5 + 0] = Math.max(-1.5, Math.min(1.5, normX));
-                            nodesData[i * 5 + 1] = Math.max(-1.5, Math.min(1.5, -normY)); // -normY: UP is positive (+), DOWN is negative (-)
+                            // Channel 0: X in [-1.75, 1.75], Channel 1: Y in [+1.75(Up), -1.75(Down)]
+                            nodesData[i * 5 + 0] = Math.max(-1.75, Math.min(1.75, normX));
+                            nodesData[i * 5 + 1] = Math.max(-1.75, Math.min(1.75, -normY)); // -normY: UP is positive (+), DOWN is negative (-)
                             nodesData[i * 5 + 2] = 10.0;
                             nodesData[i * 5 + 3] = 10.0;
                             nodesData[i * 5 + 4] = rawKP.conf || 1.0;
@@ -317,7 +319,7 @@ async function runEndToEndPipeline(time) {
                         const rootY = outputData[0 * 3 + 1];
                         const rootZ = outputData[0 * 3 + 2];
 
-                        const GCN_DISPLAY_SCALE = 1.0; // 1:1 metric scale in Three.js
+                        const GCN_DISPLAY_SCALE = 2.0; // Scaled to full 2.0m viewport span in Three.js
 
                         for (let i = 0; i < 17; i++) {
                             // 1. Subtract Root (Pelvis) offset to anchor pelvis at origin (0, 0, 0)
@@ -387,7 +389,13 @@ async function runEndToEndPipeline(time) {
             const dy = (Math.max(...currentJoints3D.map(j => j.y)) - Math.min(...currentJoints3D.map(j => j.y))).toFixed(2);
             const dz = (Math.max(...currentJoints3D.map(j => j.z)) - Math.min(...currentJoints3D.map(j => j.z))).toFixed(2);
 
-            logMsg(`[3D Engine] ${statusStr} | Latency: ${elapsed}ms | Position: (${personCenterX.toFixed(2)}, ${personCenterY.toFixed(2)}) | 3D Span -> X:[${dx}m] Y:[${dy}m] Z:[${dz}m]`);
+            const lW_conf = lWrist ? (lWrist.conf || 0).toFixed(2) : '0.00';
+            const rW_conf = rWrist ? (rWrist.conf || 0).toFixed(2) : '0.00';
+            const lW_3d = currentJoints3D[13];
+            const rW_3d = currentJoints3D[16];
+
+            logMsg(`[3D Engine] ${statusStr} | Latency: ${elapsed}ms | 3D Span -> X:[${dx}m] Y:[${dy}m] Z:[${dz}m]`);
+            logMsg(`[Wrist Telemetry] L-Wrist: 2D(${lWrist ? lWrist.x.toFixed(0) : 0}, ${lWrist ? lWrist.y.toFixed(0) : 0}) conf:${lW_conf} -> 3D(${lW_3d.x.toFixed(2)}, ${lW_3d.y.toFixed(2)}, ${lW_3d.z.toFixed(2)}) | R-Wrist: 2D(${rWrist ? rWrist.x.toFixed(0) : 0}, ${rWrist ? rWrist.y.toFixed(0) : 0}) conf:${rW_conf} -> 3D(${rW_3d.x.toFixed(2)}, ${rW_3d.y.toFixed(2)}, ${rW_3d.z.toFixed(2)})`);
             lastLogTime = performance.now();
         }
 
