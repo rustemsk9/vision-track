@@ -5,3 +5,5 @@ training_data_output/
 *.npz
 *.tar.bz2
 *.zip
+tools/
+blender_addon/

@@ -4,32 +4,6 @@
 https://amass.is.tue.mpg.de
 https://smpl.is.tue.mpg.de
 
-```start
-~/vision-track
-installed in vscode extension called Blender Development, so it will load our addon using cli.
-special .md files:
-Gemini-blender mac(for now).md
-Gemini-research 1.md
-Gemini-Multi-Head Attention for Object Detection.md
-
-we are on the step for 3d pose training with AMASS BVH, and blender has .bvh extension for armature. 
-
-not sure if we need addon development
-need nice plan
-
-lets start building up our plan for 3D Advanced Engine in app.py 
-would probably use /frontend and need seperate requirements-3d.txt
-
-we mainly focus on one angle optimized training GCN, cause its prototype for imac camera 3d datection. 
-
-not sure if we need best in slot either vulkan or webgl?
-
-also about BVH and its features or alternatives
-Gemini-Bounding Volume Hierarchy Construction Methods
-
-https://www.youtube.com/watch?v=lU0jplEoFoU&t=459s
-uses leafs bounding vertices to generate skeletons, or we stick with medial axis transform?
-```
    
 ### Overview
 
