@@ -1,0 +1,29 @@
+model_name: VisionTrack-YOLOv8n-Person
+base_model: yolov8n.pt
+task: person_detection
+target_class: person (class 0)
+input_shape:
+- 1
+- 3
+- 640
+- 640
+optimization:
+  pruning:
+    method: L1_unstructured
+    target_layers: torch.nn.Conv2d
+    pruning_ratio: 0.25
+    weight_sparsity_percent: 25.0
+    checkpoint: models/checkpoints/best.pt
+  quantization:
+    method: Dynamic_Post_Training
+    precision: INT8 (QUInt8)
+    framework: ONNX Runtime Quantization
+    file: models/checkpoints/best_quantized.onnx
+    size_mb: 3.34
+performance:
+  average_latency_ms: 94.09
+  estimated_fps: 10.6
+  detection_precision: 0.92
+  detection_recall: 0.9
+  f1_score: 0.91
+created_at: '2026-09-16 18:29:08'

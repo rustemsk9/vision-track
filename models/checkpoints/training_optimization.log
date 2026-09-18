@@ -1,0 +1,79 @@
+2026-09-16 18:29:05,112 [INFO] ==================================================
+2026-09-16 18:29:05,112 [INFO] VisionTrack: YOLO Model Pruning & INT8 Quantization
+2026-09-16 18:29:05,113 [INFO] ==================================================
+2026-09-16 18:29:05,113 [INFO] Loading base YOLO model: yolov8n.pt
+2026-09-16 18:29:05,160 [INFO] Baseline Total Parameters: 3,157,200
+2026-09-16 18:29:05,160 [INFO] Applying L1 Unstructured Pruning (Sparsity: 25.0% on Conv2d layers)...
+2026-09-16 18:29:05,266 [INFO] Successfully pruned 64/64 Conv2d layers.
+2026-09-16 18:29:05,273 [INFO] Achieved Weight Sparsity across target layers: 25.00%
+2026-09-16 18:29:05,345 [INFO] Saved pruned checkpoint to: models/checkpoints/best.pt (6.23 MB)
+2026-09-16 18:29:05,345 [INFO] Exporting pruned model to ONNX format (opset 12)...
+2026-09-16 18:29:06,924 [INFO] Exported ONNX model: models/checkpoints/best.onnx
+2026-09-16 18:29:06,924 [INFO] Applying Dynamic INT8 Quantization -> models/checkpoints/best_quantized.onnx...
+2026-09-16 18:29:06,976 [WARNING] Please consider to run pre-processing before quantization. Refer to example: https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+2026-09-16 18:29:07,013 [INFO] Quantization parameters for tensor:"images" not specified
+2026-09-16 18:29:07,015 [INFO] Quantization parameters for tensor:"/model.0/act/Mul_output_0" not specified
+2026-09-16 18:29:07,017 [INFO] Quantization parameters for tensor:"/model.1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,019 [INFO] Quantization parameters for tensor:"/model.2/Split_output_1" not specified
+2026-09-16 18:29:07,021 [INFO] Quantization parameters for tensor:"/model.2/m.0/cv1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,022 [INFO] Quantization parameters for tensor:"/model.2/Concat_output_0" not specified
+2026-09-16 18:29:07,023 [INFO] Quantization parameters for tensor:"/model.2/cv2/act/Mul_output_0" not specified
+2026-09-16 18:29:07,025 [INFO] Quantization parameters for tensor:"/model.3/act/Mul_output_0" not specified
+2026-09-16 18:29:07,026 [INFO] Quantization parameters for tensor:"/model.4/Split_output_1" not specified
+2026-09-16 18:29:07,027 [INFO] Quantization parameters for tensor:"/model.4/m.0/cv1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,029 [INFO] Quantization parameters for tensor:"/model.4/m.0/Add_output_0" not specified
+2026-09-16 18:29:07,030 [INFO] Quantization parameters for tensor:"/model.4/m.1/cv1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,031 [INFO] Quantization parameters for tensor:"/model.4/Concat_output_0" not specified
+2026-09-16 18:29:07,033 [INFO] Quantization parameters for tensor:"/model.4/cv2/act/Mul_output_0" not specified
+2026-09-16 18:29:07,035 [INFO] Quantization parameters for tensor:"/model.5/act/Mul_output_0" not specified
+2026-09-16 18:29:07,036 [INFO] Quantization parameters for tensor:"/model.6/Split_output_1" not specified
+2026-09-16 18:29:07,038 [INFO] Quantization parameters for tensor:"/model.6/m.0/cv1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,039 [INFO] Quantization parameters for tensor:"/model.6/m.0/Add_output_0" not specified
+2026-09-16 18:29:07,041 [INFO] Quantization parameters for tensor:"/model.6/m.1/cv1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,042 [INFO] Quantization parameters for tensor:"/model.6/Concat_output_0" not specified
+2026-09-16 18:29:07,044 [INFO] Quantization parameters for tensor:"/model.6/cv2/act/Mul_output_0" not specified
+2026-09-16 18:29:07,047 [INFO] Quantization parameters for tensor:"/model.7/act/Mul_output_0" not specified
+2026-09-16 18:29:07,049 [INFO] Quantization parameters for tensor:"/model.8/Split_output_1" not specified
+2026-09-16 18:29:07,050 [INFO] Quantization parameters for tensor:"/model.8/m.0/cv1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,052 [INFO] Quantization parameters for tensor:"/model.8/Concat_output_0" not specified
+2026-09-16 18:29:07,054 [INFO] Quantization parameters for tensor:"/model.8/cv2/act/Mul_output_0" not specified
+2026-09-16 18:29:07,055 [INFO] Quantization parameters for tensor:"/model.9/Concat_output_0" not specified
+2026-09-16 18:29:07,058 [INFO] Quantization parameters for tensor:"/model.11/Concat_output_0" not specified
+2026-09-16 18:29:07,059 [INFO] Quantization parameters for tensor:"/model.12/Split_output_1" not specified
+2026-09-16 18:29:07,060 [INFO] Quantization parameters for tensor:"/model.12/m.0/cv1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,062 [INFO] Quantization parameters for tensor:"/model.12/Concat_output_0" not specified
+2026-09-16 18:29:07,064 [INFO] Quantization parameters for tensor:"/model.14/Concat_output_0" not specified
+2026-09-16 18:29:07,066 [INFO] Quantization parameters for tensor:"/model.15/Split_output_1" not specified
+2026-09-16 18:29:07,067 [INFO] Quantization parameters for tensor:"/model.15/m.0/cv1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,069 [INFO] Quantization parameters for tensor:"/model.15/Concat_output_0" not specified
+2026-09-16 18:29:07,071 [INFO] Quantization parameters for tensor:"/model.15/cv2/act/Mul_output_0" not specified
+2026-09-16 18:29:07,075 [INFO] Quantization parameters for tensor:"/model.22/cv2.0/cv2.0.0/act/Mul_output_0" not specified
+2026-09-16 18:29:07,077 [INFO] Quantization parameters for tensor:"/model.22/cv3.0/cv3.0.0/act/Mul_output_0" not specified
+2026-09-16 18:29:07,079 [INFO] Quantization parameters for tensor:"/model.17/Concat_output_0" not specified
+2026-09-16 18:29:07,081 [INFO] Quantization parameters for tensor:"/model.22/cv2.0/cv2.0.1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,083 [INFO] Quantization parameters for tensor:"/model.22/cv3.0/cv3.0.1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,084 [INFO] Quantization parameters for tensor:"/model.18/Split_output_1" not specified
+2026-09-16 18:29:07,086 [INFO] Quantization parameters for tensor:"/model.18/m.0/cv1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,088 [INFO] Quantization parameters for tensor:"/model.18/Concat_output_0" not specified
+2026-09-16 18:29:07,089 [INFO] Quantization parameters for tensor:"/model.18/cv2/act/Mul_output_0" not specified
+2026-09-16 18:29:07,095 [INFO] Quantization parameters for tensor:"/model.22/cv2.1/cv2.1.0/act/Mul_output_0" not specified
+2026-09-16 18:29:07,097 [INFO] Quantization parameters for tensor:"/model.22/cv3.1/cv3.1.0/act/Mul_output_0" not specified
+2026-09-16 18:29:07,099 [INFO] Quantization parameters for tensor:"/model.20/Concat_output_0" not specified
+2026-09-16 18:29:07,102 [INFO] Quantization parameters for tensor:"/model.22/cv2.1/cv2.1.1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,105 [INFO] Quantization parameters for tensor:"/model.22/cv3.1/cv3.1.1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,107 [INFO] Quantization parameters for tensor:"/model.21/Split_output_1" not specified
+2026-09-16 18:29:07,110 [INFO] Quantization parameters for tensor:"/model.21/m.0/cv1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,112 [INFO] Quantization parameters for tensor:"/model.21/Concat_output_0" not specified
+2026-09-16 18:29:07,115 [INFO] Quantization parameters for tensor:"/model.21/cv2/act/Mul_output_0" not specified
+2026-09-16 18:29:07,119 [INFO] Quantization parameters for tensor:"/model.22/cv2.2/cv2.2.0/act/Mul_output_0" not specified
+2026-09-16 18:29:07,121 [INFO] Quantization parameters for tensor:"/model.22/cv3.2/cv3.2.0/act/Mul_output_0" not specified
+2026-09-16 18:29:07,123 [INFO] Quantization parameters for tensor:"/model.22/cv2.2/cv2.2.1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,126 [INFO] Quantization parameters for tensor:"/model.22/cv3.2/cv3.2.1/act/Mul_output_0" not specified
+2026-09-16 18:29:07,128 [INFO] Quantization parameters for tensor:"/model.22/dfl/Transpose_1_output_0" not specified
+2026-09-16 18:29:07,147 [INFO] Saved INT8 Quantized ONNX model: models/checkpoints/best_quantized.onnx (3.34 MB)
+2026-09-16 18:29:07,148 [INFO] Benchmarking Inference Latency on CPU...
+2026-09-16 18:29:08,942 [INFO] INT8 Quantized Model Latency: 94.09 ms (~10.6 FPS)
+2026-09-16 18:29:08,944 [INFO] Generated configuration file: models/checkpoints/config.yaml
+2026-09-16 18:29:08,944 [INFO] ==================================================
+2026-09-16 18:29:08,944 [INFO] Optimization Complete! All deliverables generated.
+2026-09-16 18:29:08,944 [INFO] ==================================================

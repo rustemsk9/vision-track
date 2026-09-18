@@ -1,3 +1,4 @@
+// Only for 2d bounding boxes
 const video = document.getElementById('webcam');
 const canvas = document.getElementById('overlay');
 const ctx = canvas.getContext('2d');
@@ -225,7 +226,7 @@ function renderLoop() {
     
     ctx.fillStyle = '#00FF00';
     ctx.font = 'bold 22px Arial';
-    ctx.fillText(`⚡ Edge AI (640p): ${currentFps} UI FPS | AI Latency: ${lastInferenceTimeMs.toFixed(1)} ms`, 20, 35);
+    ctx.fillText(`⚡${currentFps} UI FPS | AI Latency: ${lastInferenceTimeMs.toFixed(1)} ms`, 20, 35);
     
     ctx.fillStyle = '#FF0000';
     ctx.font = '22px Arial';

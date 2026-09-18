@@ -1,3 +1,4 @@
+# Only for 2d bounding boxes
 import supervision as sv
 import numpy as np
 import cv2

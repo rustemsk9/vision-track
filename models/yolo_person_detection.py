@@ -1,9 +1,16 @@
+# Only for 2d bounding boxes
 import torch
 from ultralytics import YOLO
 
 class PersonDetector:
-    def __init__(self, model_path="yolov8n.pt"):
-        # Load YOLO model for person detection
+    def __init__(self, model_path=None):
+        import os
+        # Load optimized pruned checkpoint if available, else fallback to yolov8n.pt
+        if model_path is None:
+            if os.path.exists("models/checkpoints/best.pt"):
+                model_path = "models/checkpoints/best.pt"
+            else:
+                model_path = "yolov8n.pt"
         self.model = YOLO(model_path)
         
         # Detect Hardware
