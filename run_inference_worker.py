@@ -12,7 +12,7 @@ parser.add_argument("--video_path", type=str, required=True)
 parser.add_argument("--conf", type=float, default=0.5)
 args = parser.parse_args()
 
-detector = PersonDetector()
+detector = PersonDetector("yolov8n.pt")
 tracker = StreamTracker()
 
 cap = cv2.VideoCapture(args.video_path)

@@ -88,7 +88,7 @@ if mode == "2D Multi-Stream (Audit Mode)":
     
     @st.cache_resource
     def load_detector():
-        return PersonDetector()
+        return PersonDetector("yolov8n.pt")
         
     detector = load_detector()
 
